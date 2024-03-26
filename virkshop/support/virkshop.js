@@ -531,6 +531,7 @@ export const createVirkshop = async (arg)=>{
                                             shellApi.callCommand(
                                                 Deno.execPath(),
                                                 "eval",
+                                                "--no-lock",
                                                 "-q",
                                                 `
                                                     import { FileSystem } from "https://deno.land/x/quickr@0.6.64/main/file_system.js"
@@ -722,7 +723,7 @@ export const createVirkshop = async (arg)=>{
                                 virkshop._internal.shellSetupPriorities.push(
                                     [
                                         eachPath.slice(parentFolderString.length),
-                                        `deno run -q -A ${shellApi.escapeShellArgument(eachPath)}`,
+                                        `deno run -q -A --no-lock ${shellApi.escapeShellArgument(eachPath)}`,
                                     ]
                                 )
                             } else if (eachPath.match(/\.zsh$/)) {
