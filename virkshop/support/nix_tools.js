@@ -599,7 +599,7 @@ export const nix = {
                     // forcefully link
                     const denoExe = Deno.execPath()
                     var {success} = await run`sudo ${denoExe} eval --no-lock -q ${`Deno.mkdirSync(${JSON.stringify(nixCertPathInfo.path)}, { recursive: true })`}`
-                    var {success} = await run`sudo ${denoExe} eval --no-lock -q ${`Deno.symlinkSync(${JSON.stringify(Console.env.NIX_SSL_CERT_FILE), JSON.stringify(nixCertPathInfo.path)})`}`
+                    var {success} = await run`sudo ${denoExe} eval --no-lock -q ${`Deno.symlinkSync(${JSON.stringify(Console.env.NIX_SSL_CERT_FILE)}, ${JSON.stringify(nixCertPathInfo.path)})`}`
                     // FIXME: report errors if not successful
                 }
             }
