@@ -597,10 +597,10 @@ export const nix = {
                 const nixCertPathInfo = await nixCertPathPromise
                 if (!nixCertPathInfo.isFile) {
                     // forcefully link
-                    var {success} = await run`sudo /bin/mkdir -p ${FileSystem.parentPath(nixCertPathInfo.path)}`
-                    var {success} = await run`sudo /bin/ln -s ${Console.env.NIX_SSL_CERT_FILE} ${nixCertPathInfo.path}`
+                    const denoExe = Deno.execPath()
+                    var {success} = await run`sudo ${denoExe} eval --no-lock -q ${`Deno.mkdirSync(${JSON.stringify(nixCertPathInfo.path)}, { recursive: true })`}`
+                    var {success} = await run`sudo ${denoExe} eval --no-lock -q ${`Deno.symlink(${JSON.stringify(Console.env.NIX_SSL_CERT_FILE), JSON.stringify(nixCertPathInfo.path)})`}`
                     // FIXME: report errors if not successful
-                    // TODO: instead of depending on /bin/mkdir run a sudo process with the current deno executable
                 }
             }
         } else {
