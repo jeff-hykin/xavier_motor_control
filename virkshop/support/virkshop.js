@@ -1,6 +1,6 @@
-import { FileSystem, glob } from "https://deno.land/x/quickr@0.6.36/main/file_system.js"
-import { run, throwIfFails, zipInto, mergeInto, returnAsString, Timeout, Env, Cwd, Stdin, Stdout, Stderr, Out, Overwrite, AppendTo } from "https://deno.land/x/quickr@0.6.36/main/run.js"
-import { Console, black, white, red, green, blue, yellow, cyan, magenta, lightBlack, lightWhite, lightRed, lightGreen, lightBlue, lightYellow, lightMagenta, lightCyan, blackBackground, whiteBackground, redBackground, greenBackground, blueBackground, yellowBackground, magentaBackground, cyanBackground, lightBlackBackground, lightRedBackground, lightGreenBackground, lightYellowBackground, lightBlueBackground, lightMagentaBackground, lightCyanBackground, lightWhiteBackground, bold, reset, dim, italic, underline, inverse, strikethrough, gray, grey, lightGray, lightGrey, grayBackground, greyBackground, lightGrayBackground, lightGreyBackground, } from "https://deno.land/x/quickr@0.6.36/main/console.js"
+import { FileSystem, glob } from "https://deno.land/x/quickr@0.6.66/main/file_system.js"
+import { run, throwIfFails, zipInto, mergeInto, returnAsString, Timeout, Env, Cwd, Stdin, Stdout, Stderr, Out, Overwrite, AppendTo } from "https://deno.land/x/quickr@0.6.66/main/run.js"
+import { Console, black, white, red, green, blue, yellow, cyan, magenta, lightBlack, lightWhite, lightRed, lightGreen, lightBlue, lightYellow, lightMagenta, lightCyan, blackBackground, whiteBackground, redBackground, greenBackground, blueBackground, yellowBackground, magentaBackground, cyanBackground, lightBlackBackground, lightRedBackground, lightGreenBackground, lightYellowBackground, lightBlueBackground, lightMagentaBackground, lightCyanBackground, lightWhiteBackground, bold, reset, dim, italic, underline, inverse, strikethrough, gray, grey, lightGray, lightGrey, grayBackground, greyBackground, lightGrayBackground, lightGreyBackground, } from "https://deno.land/x/quickr@0.6.66/main/console.js"
 import { indent, findAll, escapeRegexMatch, escapeRegexReplace, } from "https://deno.land/x/good@0.7.18/string.js"
 import { recursivelyAllKeysOf, get, set, remove, merge, compareProperty } from "https://deno.land/x/good@0.7.18/object.js"
 import { intersection, subtract } from "https://deno.land/x/good@0.7.18/set.js"
@@ -12,6 +12,8 @@ import { Type } from "https://deno.land/std@0.82.0/encoding/_yaml/type.ts"
 import * as yaml from "https://deno.land/std@0.82.0/encoding/yaml.ts"
 import * as Path from "https://deno.land/std@0.128.0/path/mod.ts"
 import { nix } from "./nix_tools.js"
+import { recursivePromiseAll } from "./generic_tools/recursive_promise_all.js"
+import { numberPrefixRenameList } from "./specific_tools/number_prefix_rename_list.js"
 
 const posixShellEscape = (string)=>"'"+string.replace(/'/g, `'"'"'`)+"'"
 
@@ -1316,56 +1318,6 @@ export const shellApi = Object.defineProperties(
     },
 )
 
-
-// 
-// 
-// Helpers
-// 
-// 
-    function numberPrefixRenameList(filepaths) {
-        let largestNumber = -Infinity
-        const items = []
-        const basenames = filepaths.map(eachPath=>FileSystem.basename(eachPath))
-        for (const each of basenames) {
-            const matchData = each.match(/^((?:[0-9_]*[0-9])?)_?(.*)/)
-            const digits = matchData[1].replace(/_/g, "")
-            const name = matchData[2]
-            const number = `${digits || 0}`-0
-            const padding = digits.match(/^0*/)[0]
-            items.push({
-                name,
-                number,
-                padding,
-                noDigits: digits.length == 0,
-            })
-            if (number > largestNumber) {
-                largestNumber = number
-            }
-        }
-        const numberOfDigits = `${largestNumber}`.length
-        const roundedToNearestThree = roundedUpToNearest({value: numberOfDigits, factor: 3})
-        const newBasenames = []
-        for (const each of items) {
-            if (each.noDigits) {
-                newBasenames.push(each.name)
-            } else {
-                const newDigits = `${each.padding}${each.number}`.padEnd(roundedToNearestThree, "0")
-                const newPrefix = newDigits.replace(/(\d\d\d)/g, "$1_")
-                newBasenames.push(`${newPrefix}${each.name}`)
-            }
-        }
-        const thingsToRename = []
-        for (const [ path, oldBasename, newBasename, item] of zip(filepaths, basenames, newBasenames, items)) {
-            if (oldBasename != newBasename) {
-                thingsToRename.push({
-                    oldPath: path,
-                    newPath: `${FileSystem.parentPath(path)}/${newBasename}`,
-                })
-            }
-        }
-        return thingsToRename
-    }
-
 // 
 // 
 // Yaml support
@@ -1496,55 +1448,6 @@ export const shellApi = Object.defineProperties(
         converter: (obj)=>obj.name,
     })
 
-import { deferred as deferredPromise } from "https://deno.land/std@0.161.0/async/mod.ts"
-const objectPrototype = Object.getPrototypeOf({})
-
-/**
- * Promise.allRecursively
- *
- * @example
- *     await recursivePromiseAll({a:1, b: [ 1, 2, new Promise((resolve, reject)=>resolve(10))] })
- *     // >>> { a: 1, b: [ 1, 2, 10 ] }
- */
-const recursivePromiseAll = (object, alreadySeen=new Map()) => {
-    if (alreadySeen.has(object)) {
-        return alreadySeen.get(object)
-    }
-    if (object instanceof Promise) {
-        return object
-    } else if (object instanceof Array) {
-        const resolveLink = deferredPromise()
-        alreadySeen.set(object, resolveLink)
-        Promise.all(
-            object.map(each=>recursivePromiseAll(each, alreadySeen))
-        ).catch(
-            resolveLink.reject
-        ).then(
-            resolveLink.resolve
-        )
-        return resolveLink
-    // if pure object
-    } else if (Object.getPrototypeOf(object) == objectPrototype) {
-        const resolveLink = deferredPromise()
-        alreadySeen.set(object, resolveLink)
-        ;((async ()=>{
-            try {
-                const keysAndValues = await Promise.all(
-                    Object.entries(object).map(
-                        (keyAndValue)=>recursivePromiseAll(keyAndValue, alreadySeen)
-                    )
-                )
-                resolveLink.resolve(Object.fromEntries(keysAndValues))
-            } catch (error) {
-                resolveLink.reject(error)
-            }
-        })())
-        return resolveLink
-    // either a primitive or a custom object that doesnt inhert from a promise
-    } else {
-        return object
-    }
-}
 export const parsePackageTools = async (pathToPackageTools)=>{
     // in the future their may be some extra logic here
     const asString = await FileSystem.read(pathToPackageTools)
