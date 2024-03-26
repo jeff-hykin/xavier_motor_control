@@ -533,7 +533,7 @@ export const createVirkshop = async (arg)=>{
                                                 "eval",
                                                 "-q",
                                                 `
-                                                    import { FileSystem } from "https://deno.land/x/quickr@0.6.27/main/file_system.js"
+                                                    import { FileSystem } from "https://deno.land/x/quickr@0.6.64/main/file_system.js"
                                                     const [ virkshopFile, tempShellOutputPath, pluginPath ] = Deno.args
                                                     const { virkshop, shellApi } = await import(virkshopFile)
                                                     const { pluginOutput } = await virkshop._internal.importPlugin(pluginPath)
