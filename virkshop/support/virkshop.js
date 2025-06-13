@@ -309,7 +309,6 @@ export const createVirkshop = async (arg)=>{
                                     ),
                                     path: storagePath,
                                 }).catch(async (error)=>{
-                                    console.debug(`storagePath1 is:`,storagePath)
                                     if (virkshop.options.debuggingLevel > 0) {
                                         console.warn(error)
                                     }
@@ -1049,6 +1048,7 @@ export const createVirkshop = async (arg)=>{
                     }
                     await run(
                         "nix-shell",
+                        ...(debuggingLevel > 0 ? [ `-${"v".repeat(Math.min(debuggingLevel-1,5))}` ] : []),
                         "--pure",
                         "--command", shellApi.startCommand,
                         ...Object.keys(envVars).map(
