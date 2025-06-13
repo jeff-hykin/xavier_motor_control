@@ -6,7 +6,7 @@
 - (defaultWarehouse):
     saveVariableAs: "defaultWarehouse"
     createWarehouseFrom:
-        tarFileUrl: "https://github.com/NixOS/nixpkgs/archive/f1b9cc23aa8b1549dd7cb53dbe9fc950efc97646.tar.gz"
+        tarFileUrl: "https://github.com/NixOS/nixpkgs/archive/472fc059560306eeea6834d5923930f1c3968724.tar.gz"
     arguments:
         config:
             allowUnfree: true
@@ -114,7 +114,7 @@
 - (package):
     load: [ "deno",]
     asBuildInput: true
-    from: "f1b9cc23aa8b1549dd7cb53dbe9fc950efc97646" # a commit-hash of https://github.com/NixOS/nixpkgs, e.g. https://github.com/NixOS/nixpkgs/archive/f1b9cc23aa8b1549dd7cb53dbe9fc950efc97646.tar.gz
+    from: "472fc059560306eeea6834d5923930f1c3968724" # a commit-hash of https://github.com/NixOS/nixpkgs, e.g. https://github.com/NixOS/nixpkgs/archive/472fc059560306eeea6834d5923930f1c3968724.tar.gz
 
 - (package):
     load: [ "nix",]

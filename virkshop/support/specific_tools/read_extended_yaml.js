@@ -2,7 +2,8 @@ import { Type } from "https://deno.land/std@0.82.0/encoding/_yaml/type.ts"
 import * as yaml from "https://deno.land/std@0.82.0/encoding/yaml.ts"
 import { FileSystem, glob } from "https://deno.land/x/quickr@0.6.66/main/file_system.js"
 import { recursivePromiseAll } from "../generic_tools/recursive_promise_all.js"
-import { toNixValue } from "./nix_tools.js"
+import { toNixValue, nix } from "./nix_tools.js"
+import { indent } from 'https://esm.sh/gh/jeff-hykin/good-js@1.17.2.0/source/flattened/indent.js'
 
 // 
 // 
@@ -10,7 +11,7 @@ import { toNixValue } from "./nix_tools.js"
 // 
 // 
 class CustomYamlType {
-    asString = null
+    asString = null;
     [toNixValue]() {
         return this.asString
     }
@@ -144,7 +145,7 @@ export const parsePackageTools = async (pathToPackageTools)=>{
     dataStructure.packages = dataStructure.map(each=>each["(integrate)"]).filter(each=>each instanceof Object)
     dataStructure.warehouses = dataStructure.map(each=>each["(warehouse)"] || each["(defaultWarehouse)"]).filter(each=>each instanceof Object)
     dataStructure.defaultWarehouse = dataStructure.map(each=>each["(defaultWarehouse)"]).filter(each=>each instanceof Object).slice(-1)[0]
-    dataStructure.directPackages = dataStructure.packages.filter(each=>each.asBuildInput&&(each.load instanceof Array))
+    dataStructure.directPackages = dataStructure.packages.filter(each=>each.asBuildInput&&(each.package instanceof Array))
     
     // TODO: add validation (better error messages) for missing warehouse attributes
     for (const each of dataStructure.warehouses) {
@@ -160,7 +161,7 @@ export const parsePackageTools = async (pathToPackageTools)=>{
 // 
 // systemToolsToNix
 // 
-export const systemToolsToNix = async function({string, path}) {
+export const systemToolsToNix = async function({string, path, coreWarehouse, escapeShellArgument, modifyEnvVar }) {
     // TODO: add error for trying to assign to a keyword (like "builtins", "rec", "let", etc)
     const start = (new Date()).getTime()
     const dataStructure = await readExtendedYaml({path, string})
@@ -222,7 +223,8 @@ export const systemToolsToNix = async function({string, path}) {
             )`.replace(/\n            /g,"\n")
         }
     }
-
+    
+    let finalShellCode = ""
     for (const eachEntry of dataStructure) {
         const kind = Object.keys(eachEntry)[0]
         // 
@@ -284,7 +286,7 @@ export const systemToolsToNix = async function({string, path}) {
                 const withPackages = values.withPackages || []
                 const whichWarehouse = values.fromWarehouse || defaultWarehouse
                 const tarFileUrl = warehouses[whichWarehouse.name].tarFileUrl // TODO: there's a lot of things that could screw up here, add checks/warnings for them
-                const escapedArguments = 'NO_COLOR=true '+values.runCommand.map(each=>`${shellApi.escapeShellArgument(each)}`).join(" ")
+                const escapedArguments = 'NO_COLOR=true '+values.runCommand.map(each=>`${escapeShellArgument(each)}`).join(" ")
                 const fullCommand = ["nix-shell", "--pure", "--packages", ...withPackages, "-I", "nixpkgs="+tarFileUrl, "--run",  escapedArguments,]
                 
                 const commandForDebugging = fullCommand.join(" ")
@@ -321,7 +323,7 @@ export const systemToolsToNix = async function({string, path}) {
                     continue
                 }
             } else {
-                virkshop._internal.finalShellCode += shellApi.modifyEnvVar({ ...values, name: values.envVar })
+                finalShellCode += modifyEnvVar({ ...values, name: values.envVar })
             }
         // 
         // (integrate)
@@ -378,14 +380,14 @@ export const systemToolsToNix = async function({string, path}) {
             // 
             const source = values.from || defaultWarehouse
             let nixValue
-            if (values.load instanceof NixValue) {
-                nixValue = `(${values.load.asString})`
+            if (values.package instanceof NixValue) {
+                nixValue = `(${values.package.asString})`
             } else if (source instanceof SystemToolVar) {
-                const loadAttribute = values.load.map(each=>nix.escapeJsValue(`${each}`)).join(".")
+                const loadAttribute = values.package.map(each=>nix.escapeJsValue(`${each}`)).join(".")
                 nixValue = `${source.name}.${loadAttribute}`
             // from a hash/url directly
             } else {
-                const loadAttribute = values.load.map(each=>nix.escapeJsValue(`${each}`)).join(".")
+                const loadAttribute = values.package.map(each=>nix.escapeJsValue(`${each}`)).join(".")
                 if (source instanceof Object) {
                     nixValue = `${warehouseAsNixValue(source)}.${loadAttribute}`
                 } else if (typeof source == "string") {
@@ -425,7 +427,7 @@ export const systemToolsToNix = async function({string, path}) {
             // get nix-value
             // 
             const source = values.from || defaultWarehouse
-            const loadAttribute = values.load.map(each=>nix.escapeJsValue(`${each}`)).join(".")
+            const loadAttribute = values.package.map(each=>nix.escapeJsValue(`${each}`)).join(".")
             let nixValue
             if (source instanceof SystemToolVar) {
                 nixValue = `${source.name}.${loadAttribute}`
@@ -462,6 +464,7 @@ export const systemToolsToNix = async function({string, path}) {
     
     return {
         defaultWarehouse,
+        finalShellCode,
         computed,
         nixValues,
         warehouses,
@@ -475,7 +478,7 @@ export const systemToolsToNix = async function({string, path}) {
                 let
                     frozenStd = (builtins.import 
                         (builtins.fetchTarball
-                            ({url=${nix.escapeJsValue(virkshop.coreWarehouse)};})
+                            ({url=${nix.escapeJsValue(coreWarehouse)};})
                         )
                         ({})
                     );

@@ -1601,7 +1601,7 @@ export const systemToolsToNix = async function({string, path}) {
         // 
         } else if (kind == "(compute)") {
             // - (compute):
-            //     runCommand: [ "nix-shell", "--pure", "--packages", "deno", "deno eval 'console.log(JSON.stringify(Deno.build.os==\'darwin\'))'", "-I", *defaultWarehouseAnchor ]
+            //     runCommand: [ "nix-shell", "--pure", "--packages", "deno", "deno eval --no-lock 'console.log(JSON.stringify(Deno.build.os==\'darwin\'))'", "-I", *defaultWarehouseAnchor ]
             //     saveVariableAs: isMac
             const values = eachEntry[kind]
             const varName = values.saveVariableAs
