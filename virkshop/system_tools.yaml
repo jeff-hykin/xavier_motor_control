@@ -6,7 +6,7 @@
 - (defaultWarehouse):
     saveVariableAs: "defaultWarehouse"
     createWarehouseFrom:
-        tarFileUrl: "https://github.com/NixOS/nixpkgs/archive/f1b9cc23aa8b1549dd7cb53dbe9fc950efc97646.tar.gz"
+        tarFileUrl: "https://github.com/NixOS/nixpkgs/archive/472fc059560306eeea6834d5923930f1c3968724.tar.gz"
     arguments:
         config:
             allowUnfree: true
@@ -113,17 +113,17 @@
 # 
 - (integrate):
     package: [ "deno",]
-    from: "f1b9cc23aa8b1549dd7cb53dbe9fc950efc97646" # a commit-hash of https://github.com/NixOS/nixpkgs, e.g. https://github.com/NixOS/nixpkgs/archive/f1b9cc23aa8b1549dd7cb53dbe9fc950efc97646.tar.gz
+    from: "472fc059560306eeea6834d5923930f1c3968724" # a commit-hash of https://github.com/NixOS/nixpkgs, e.g. https://github.com/NixOS/nixpkgs/archive/472fc059560306eeea6834d5923930f1c3968724.tar.gz
     asBuildInput: true
     keep:
       - "bin/deno"
 
 - (integrate):
-    load: [ "nix",]
+    package: [ "nix",]
     asBuildInput: true
 
 - (integrate):
-    load: [ "zsh",]
+    package: [ "zsh",]
     asBuildInput: true
     
 # 
@@ -131,13 +131,13 @@
 # 
 
 # - (integrate):
-#     load: [ "pkgconfig",]
+#     package: [ "pkgconfig",]
 #     asBuildInput: true
 #     asNativeBuildInput: true
 #     onlyIf: !!var isLinux
 
 # - (integrate):
-#     load: [ "cmake",]
+#     package: [ "cmake",]
 #     asBuildInput: true
 #     asNativeBuildInput: true
 #     onlyIf: !!var isLinux
@@ -147,31 +147,31 @@
 # 
 
 # - (integrate):
-#     load: [ "xcbuild",]
+#     package: [ "xcbuild",]
 #     asBuildInput: true
 #     asNativeBuildInput: true
 #     onlyIf: !!var isMac
 
 # - (integrate):
-#     load: [ "xcodebuild",]
+#     package: [ "xcodebuild",]
 #     asBuildInput: true
 #     asNativeBuildInput: true
 #     onlyIf: !!var isMac
 
 # - (integrate):
-#     load: [ "darwin", "libobjc", ]
+#     package: [ "darwin", "libobjc", ]
 #     asBuildInput: true
 #     asNativeBuildInput: true
 #     onlyIf: !!var isMac
 
 # - (integrate):
-#     load: [ "darwin", "apple_sdk", "frameworks", "CoreServices" ]
+#     package: [ "darwin", "apple_sdk", "frameworks", "CoreServices" ]
 #     asBuildInput: true
 #     asNativeBuildInput: true
 #     onlyIf: !!var isMac
 
 # - (integrate):
-#     load: [ "darwin", "apple_sdk", "frameworks", "CoreFoundation" ]
+#     package: [ "darwin", "apple_sdk", "frameworks", "CoreFoundation" ]
 #     asBuildInput: true
 #     asNativeBuildInput: true
 #     onlyIf: !!var isMac
@@ -185,189 +185,189 @@
 
 
 # - (integrate):
-#     load: [ "which",]
+#     package: [ "which",]
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "curl",]
+#     package: [ "curl",]
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "less",]
+#     package: [ "less",]
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "man",]
+#     package: [ "man",]
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "coreutils",]
+#     package: [ "coreutils",]
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "findutils",]
+#     package: [ "findutils",]
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "wget",]
+#     package: [ "wget",]
 #     asBuildInput: true
     
 # - (integrate):
-#     load: [ "nano",]
+#     package: [ "nano",]
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "zip",]
+#     package: [ "zip",]
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unzip",]
+#     package: [ "unzip",]
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "git",]
+#     package: [ "git",]
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "openssh",]
+#     package: [ "openssh",]
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "colorls",]
+#     package: [ "colorls",]
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "ping",]
+#     package: [ "unixtools", "ping",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 
 # - (integrate):
-#     load: [ "unixtools", "ifconfig",]
+#     package: [ "unixtools", "ifconfig",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "netstat",]
+#     package: [ "unixtools", "netstat",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "arp",]
+#     package: [ "unixtools", "arp",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "route",]
+#     package: [ "unixtools", "route",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "col",]
+#     package: [ "unixtools", "col",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "column",]
+#     package: [ "unixtools", "column",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "fdisk",]
+#     package: [ "unixtools", "fdisk",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "fsck",]
+#     package: [ "unixtools", "fsck",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "getconf",]
+#     package: [ "unixtools", "getconf",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "getent",]
+#     package: [ "unixtools", "getent",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "getopt",]
+#     package: [ "unixtools", "getopt",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "hexdump",]
+#     package: [ "unixtools", "hexdump",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "hostname",]
+#     package: [ "unixtools", "hostname",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "killall",]
+#     package: [ "unixtools", "killall",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "locale",]
+#     package: [ "unixtools", "locale",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "more",]
+#     package: [ "unixtools", "more",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "mount",]
+#     package: [ "unixtools", "mount",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "ps",]
+#     package: [ "unixtools", "ps",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "quota",]
+#     package: [ "unixtools", "quota",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "script",]
+#     package: [ "unixtools", "script",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "sysctl",]
+#     package: [ "unixtools", "sysctl",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "top",]
+#     package: [ "unixtools", "top",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "umount",]
+#     package: [ "unixtools", "umount",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "whereis",]
+#     package: [ "unixtools", "whereis",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "write",]
+#     package: [ "unixtools", "write",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
 
 # - (integrate):
-#     load: [ "unixtools", "xxd",]
+#     package: [ "unixtools", "xxd",]
 #     from: !!var warehouseForNetworking
 #     asBuildInput: true
