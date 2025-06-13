@@ -11,7 +11,7 @@ import { move as moveAndRename } from "https://deno.land/std@0.133.0/fs/mod.ts"
 import * as Path from "https://deno.land/std@0.128.0/path/mod.ts"
 import { zip } from "https://deno.land/x/good@1.1.0.0/array.js"
 import { virkshop, parsePackageTools } from "./support/virkshop.js"
-import { nix } from "./support/nix_tools.js"
+import { nix } from "./support/specific_tools/nix_tools.js"
 import { parse } from "https://deno.land/std@0.171.0/flags/mod.ts"
 
 // 

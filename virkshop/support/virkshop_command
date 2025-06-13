@@ -5,8 +5,8 @@ const { namedArgs } = new Args({argList: Deno.args})
 const helpString = `
 
     Examples:
-        @virkshop --nixPathFor zsh-autosuggestions
-        @virkshop --nixLibPathFor zsh-autosuggestions
+        @virkshop --nixPathFor=zsh-autosuggestions
+        @virkshop --nixLibPathFor=zsh-autosuggestions
 
 `.replace(/\n    /g, "\n")
 

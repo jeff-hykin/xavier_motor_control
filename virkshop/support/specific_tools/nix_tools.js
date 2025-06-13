@@ -15,6 +15,8 @@ import { move as moveAndRename } from "https://deno.land/std@0.133.0/fs/mod.ts"
 import * as Path from "https://deno.land/std@0.128.0/path/mod.ts"
 import { indent, findAll } from "https://deno.land/x/good@1.4.2.0/string.js"
 
+export const toNixValue = Symbol("toNixValue")
+
 export const nix = {
     async ensureInstalled(options={defaultVersion: null}) {
         const { defaultVersion } = { defaultVersion: '2.11.1', ...options }
@@ -253,7 +255,7 @@ export const nix = {
                     }
                     
                     // TODO: clean this up (probably put this logic into virkshop.js )
-                    const { virkshop } = await import(`./virkshop.js`)
+                    const { virkshop } = await import(`../virkshop.js`)
 
                     // 
                     // move the project
@@ -645,14 +647,8 @@ export const nix = {
         // 
         // custom
         // 
-        for (const [ checker, converter ] of this._customJsConverters) {
-            try {
-                if (checker(obj)) {
-                    return converter(obj)
-                }
-            } catch (error) {
-                console.warn(`From nix.escapeJsValue()\nA custom checker-converter\n    checker:${checker.toString()}\n    converter:${converter.toString()}\n\nFailed with the following error`, error)
-            }
+        if (obj[toNixValue] instanceof Function) {
+            return obj[toNixValue]()
         }
 
         const objectType = typeof obj
@@ -722,11 +718,6 @@ export const nix = {
             throw Error(`Unable to convert this value to a Nix representation: ${obj}`)
         }
     },
-    addCustomJsConverter({checker, converter}) {
-        this._customJsConverters.push([checker, converter])
-    },
-    _customJsConverters: [],
-
 }
 
 // 
