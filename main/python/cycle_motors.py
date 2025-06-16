@@ -27,6 +27,7 @@ if True:
 
     prev_angle = 720
     def set_angle(angle):
+        global prev_angle
         # not a big enough change
         if abs((angle - prev_angle) % 360) < 20:
             print(f'''overshooting to {angle+20}''')
@@ -34,7 +35,7 @@ if True:
             set_pulse_width(angle_to_pulse_with(angle+20))
             
         set_pulse_width(angle_to_pulse_with(angle))
-        
+        prev_angle = angle
 
 
 # 
