@@ -6,7 +6,7 @@ from time import time
 # config
 #
 timeout = 0.05
-serial_baudrate = 115200
+baudrate = 115200
 serial_port = "/dev/ttyTHS0" 
 
 def setup_serial_port():
@@ -20,7 +20,7 @@ def setup_serial_port():
             return serial.Serial(
                 serial_port,
                 baudrate=baudrate,
-                timeout=config.communication.timeout,
+                timeout=timeout,
                 bytesize=serial.EIGHTBITS,
                 parity=serial.PARITY_NONE,
                 stopbits=serial.STOPBITS_ONE
