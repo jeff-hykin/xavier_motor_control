@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/modm-io/avr-libstdcpp.git
+	branch = master
+	commit = 5354296040a2289c911062daa82336762231e897
+	parent = 34d3bdf72e198a8b5ab22f2c1d78b2e8714b6dfd
+	method = merge
+	cmdver = 0.4.5
