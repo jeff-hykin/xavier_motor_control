@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/modm-ext/nanopb-partial.git
+	branch = main
+	commit = 16cd58bda9eec1810480917cb2e7681c0ad7b81d
+	parent = 37f958847689e5c94bb0fbd49e20bc44364fdb6b
+	method = merge
+	cmdver = 0.4.5
