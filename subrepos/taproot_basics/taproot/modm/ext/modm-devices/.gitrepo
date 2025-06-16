@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/modm-io/modm-devices.git
+	branch = develop
+	commit = 908a995df86e1bba9a2dd7a341f24ce402cc684a
+	parent = 8ec673c22febd84b7bab60304e06597555a1d3b8
+	method = merge
+	cmdver = 0.4.5

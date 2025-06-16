@@ -1,0 +1,432 @@
+diff --git a/stm32-devices/mcu/IP/DMA-STM32G484_dma1_v1_3_Modes.xml b/stm32-devices/mcu/IP/DMA-STM32G484_dma1_v1_3_Modes.xml
+index c8a77f2..43d92ee 100644
+--- a/stm32-devices/mcu/IP/DMA-STM32G484_dma1_v1_3_Modes.xml
++++ b/stm32-devices/mcu/IP/DMA-STM32G484_dma1_v1_3_Modes.xml
+@@ -36,10 +36,10 @@
+  </RefParameter>
+  <RefParameter Comment="Request number" DefaultValue="" Group="" Name="Request" Type="list" Visible="false">
+    <PossibleValue Comment="MEMTOMEM" Value="DMA_REQUEST_MEM2MEM"/>
++   <PossibleValue Comment="DMA_GENERATOR0" Value="DMA_REQUEST_GENERATOR0"/>
+    <PossibleValue Comment="DMA_GENERATOR1" Value="DMA_REQUEST_GENERATOR1"/>
+    <PossibleValue Comment="DMA_GENERATOR2" Value="DMA_REQUEST_GENERATOR2"/>
+    <PossibleValue Comment="DMA_GENERATOR3" Value="DMA_REQUEST_GENERATOR3"/>
+-   <PossibleValue Comment="DMA_GENERATOR4" Value="DMA_REQUEST_GENERATOR4"/>
+    <PossibleValue Comment="ADC1" Value="DMA_REQUEST_ADC1"/>
+    <PossibleValue Comment="DAC1_CH1" Value="DMA_REQUEST_DAC1_CHANNEL1"/>
+    <PossibleValue Comment="DAC1_CH2" Value="DMA_REQUEST_DAC1_CHANNEL2"/>
+@@ -2992,7 +2992,6 @@
+            <Mode Name="CORDIC_WRITE"/>
+            <Mode Name="UCPD1_RX"/>
+            <Mode Name="UCPD1_TX"/>
+-           <Mode Name="FMAC_PRELOAD"/>
+          </ModeLogicOperator>
+        </Mode>
+      </ModeLogicOperator>
+--- a/stm32-devices/mcu/IP/DMA-STM32G491_dma1_v1_3_Modes.xml
++++ b/stm32-devices/mcu/IP/DMA-STM32G491_dma1_v1_3_Modes.xml
+@@ -36,10 +36,10 @@
+  </RefParameter>
+  <RefParameter Comment="Request number" DefaultValue="" Group="" Name="Request" Type="list" Visible="false">
+    <PossibleValue Comment="MEMTOMEM" Value="DMA_REQUEST_MEM2MEM"/>
++   <PossibleValue Comment="DMA_GENERATOR0" Value="DMA_REQUEST_GENERATOR0"/>
+    <PossibleValue Comment="DMA_GENERATOR1" Value="DMA_REQUEST_GENERATOR1"/>
+    <PossibleValue Comment="DMA_GENERATOR2" Value="DMA_REQUEST_GENERATOR2"/>
+    <PossibleValue Comment="DMA_GENERATOR3" Value="DMA_REQUEST_GENERATOR3"/>
+-   <PossibleValue Comment="DMA_GENERATOR4" Value="DMA_REQUEST_GENERATOR4"/>
+    <PossibleValue Comment="ADC1" Value="DMA_REQUEST_ADC1"/>
+    <PossibleValue Comment="DAC1_CH1" Value="DMA_REQUEST_DAC1_CHANNEL1"/>
+    <PossibleValue Comment="DAC1_CH2" Value="DMA_REQUEST_DAC1_CHANNEL2"/>
+@@ -2992,7 +2992,6 @@
+            <Mode Name="CORDIC_WRITE"/>
+            <Mode Name="UCPD1_RX"/>
+            <Mode Name="UCPD1_TX"/>
+-           <Mode Name="FMAC_PRELOAD"/>
+          </ModeLogicOperator>
+        </Mode>
+      </ModeLogicOperator>
+diff --git a/stm32-devices/mcu/STM32G491C(C-E)Tx.xml b/stm32-devices/mcu/STM32G491C(C-E)Tx.xml
+index 65f6156..ff9132d 100644
+--- a/stm32-devices/mcu/STM32G491C(C-E)Tx.xml
++++ b/stm32-devices/mcu/STM32G491C(C-E)Tx.xml
+@@ -2,7 +2,7 @@
+ <Mcu ClockTree="STM32G4-479" DBVersion="V3.0" Family="STM32G4" HasPowerPad="false" IOType="" Line="STM32G4x1" Package="LQFP48" RefName="STM32G491C(C-E)Tx" xmlns="http://mcd.rou.st.com/modules.php?name=mcu">
+     <Core>ARM Cortex-M4</Core>
+     <Frequency>170</Frequency>
+-    <Ram>128</Ram>
++    <Ram>112</Ram>
+     <IONb>38</IONb>
+     <Die>DIE479</Die>
+     <Flash>256</Flash>
+diff --git a/stm32-devices/mcu/STM32G491C(C-E)Ux.xml b/stm32-devices/mcu/STM32G491C(C-E)Ux.xml
+index ad99ba7..81b65ca 100644
+--- a/stm32-devices/mcu/STM32G491C(C-E)Ux.xml
++++ b/stm32-devices/mcu/STM32G491C(C-E)Ux.xml
+@@ -2,7 +2,7 @@
+ <Mcu ClockTree="STM32G4-479" DBVersion="V3.0" Family="STM32G4" HasPowerPad="false" IOType="" Line="STM32G4x1" Package="UFQFPN48" RefName="STM32G491C(C-E)Ux" xmlns="http://mcd.rou.st.com/modules.php?name=mcu">
+     <Core>ARM Cortex-M4</Core>
+     <Frequency>170</Frequency>
+-    <Ram>128</Ram>
++    <Ram>112</Ram>
+     <IONb>42</IONb>
+     <Die>DIE479</Die>
+     <Flash>256</Flash>
+diff --git a/stm32-devices/mcu/STM32G491K(C-E)Ux.xml b/stm32-devices/mcu/STM32G491K(C-E)Ux.xml
+index e130b99..71c0866 100644
+--- a/stm32-devices/mcu/STM32G491K(C-E)Ux.xml
++++ b/stm32-devices/mcu/STM32G491K(C-E)Ux.xml
+@@ -2,7 +2,7 @@
+ <Mcu ClockTree="STM32G4-479" DBVersion="V3.0" Family="STM32G4" HasPowerPad="false" IOType="" Line="STM32G4x1" Package="UFQFPN32" RefName="STM32G491K(C-E)Ux" xmlns="http://mcd.rou.st.com/modules.php?name=mcu">
+     <Core>ARM Cortex-M4</Core>
+     <Frequency>170</Frequency>
+-    <Ram>128</Ram>
++    <Ram>112</Ram>
+     <IONb>26</IONb>
+     <Die>DIE479</Die>
+     <Flash>256</Flash>
+diff --git a/stm32-devices/mcu/STM32G491M(C-E)Sx.xml b/stm32-devices/mcu/STM32G491M(C-E)Sx.xml
+index 251c0da..f280c91 100644
+--- a/stm32-devices/mcu/STM32G491M(C-E)Sx.xml
++++ b/stm32-devices/mcu/STM32G491M(C-E)Sx.xml
+@@ -2,7 +2,7 @@
+ <Mcu ClockTree="STM32G4-479" DBVersion="V3.0" Family="STM32G4" HasPowerPad="false" IOType="" Line="STM32G4x1" Package="LQFP80" RefName="STM32G491M(C-E)Sx" xmlns="http://mcd.rou.st.com/modules.php?name=mcu">
+     <Core>ARM Cortex-M4</Core>
+     <Frequency>170</Frequency>
+-    <Ram>128</Ram>
++    <Ram>112</Ram>
+     <IONb>66</IONb>
+     <Die>DIE479</Die>
+     <Flash>256</Flash>
+diff --git a/stm32-devices/mcu/STM32G491M(C-E)Tx.xml b/stm32-devices/mcu/STM32G491M(C-E)Tx.xml
+index 035e6df..7a6aa05 100644
+--- a/stm32-devices/mcu/STM32G491M(C-E)Tx.xml
++++ b/stm32-devices/mcu/STM32G491M(C-E)Tx.xml
+@@ -2,7 +2,7 @@
+ <Mcu ClockTree="STM32G4-479" DBVersion="V3.0" Family="STM32G4" HasPowerPad="false" IOType="" Line="STM32G4x1" Package="LQFP80" RefName="STM32G491M(C-E)Tx" xmlns="http://mcd.rou.st.com/modules.php?name=mcu">
+     <Core>ARM Cortex-M4</Core>
+     <Frequency>170</Frequency>
+-    <Ram>128</Ram>
++    <Ram>112</Ram>
+     <IONb>66</IONb>
+     <Die>DIE479</Die>
+     <Flash>256</Flash>
+diff --git a/stm32-devices/mcu/STM32G491R(C-E)Ix.xml b/stm32-devices/mcu/STM32G491R(C-E)Ix.xml
+index 6e447a4..17dcde7 100644
+--- a/stm32-devices/mcu/STM32G491R(C-E)Ix.xml
++++ b/stm32-devices/mcu/STM32G491R(C-E)Ix.xml
+@@ -2,7 +2,7 @@
+ <Mcu ClockTree="STM32G4-479" DBVersion="V3.0" Family="STM32G4" HasPowerPad="false" IOType="" Line="STM32G4x1" Package="UFBGA64" RefName="STM32G491R(C-E)Ix" xmlns="http://mcd.rou.st.com/modules.php?name=mcu">
+     <Core>ARM Cortex-M4</Core>
+     <Frequency>170</Frequency>
+-    <Ram>128</Ram>
++    <Ram>112</Ram>
+     <IONb>52</IONb>
+     <Die>DIE479</Die>
+     <Flash>256</Flash>
+diff --git a/stm32-devices/mcu/STM32G491R(C-E)Tx.xml b/stm32-devices/mcu/STM32G491R(C-E)Tx.xml
+index 53954a2..20b5b30 100644
+--- a/stm32-devices/mcu/STM32G491R(C-E)Tx.xml
++++ b/stm32-devices/mcu/STM32G491R(C-E)Tx.xml
+@@ -2,7 +2,7 @@
+ <Mcu ClockTree="STM32G4-479" DBVersion="V3.0" Family="STM32G4" HasPowerPad="false" IOType="" Line="STM32G4x1" Package="LQFP64" RefName="STM32G491R(C-E)Tx" xmlns="http://mcd.rou.st.com/modules.php?name=mcu">
+     <Core>ARM Cortex-M4</Core>
+     <Frequency>170</Frequency>
+-    <Ram>128</Ram>
++    <Ram>112</Ram>
+     <IONb>52</IONb>
+     <Die>DIE479</Die>
+     <Flash>256</Flash>
+diff --git a/stm32-devices/mcu/STM32G491REYx.xml b/stm32-devices/mcu/STM32G491REYx.xml
+index 86ca3a1..ba7c77c 100644
+--- a/stm32-devices/mcu/STM32G491REYx.xml
++++ b/stm32-devices/mcu/STM32G491REYx.xml
+@@ -2,7 +2,7 @@
+ <Mcu ClockTree="STM32G4-479" DBVersion="V3.0" Family="STM32G4" HasPowerPad="false" IOType="" Line="STM32G4x1" Package="WLCSP64" RefName="STM32G491REYx" xmlns="http://mcd.rou.st.com/modules.php?name=mcu">
+     <Core>ARM Cortex-M4</Core>
+     <Frequency>170</Frequency>
+-    <Ram>128</Ram>
++    <Ram>112</Ram>
+     <IONb>52</IONb>
+     <Die>DIE479</Die>
+     <Flash>512</Flash>
+diff --git a/stm32-devices/mcu/STM32G491V(C-E)Tx.xml b/stm32-devices/mcu/STM32G491V(C-E)Tx.xml
+index 5a107b2..4db0d98 100644
+--- a/stm32-devices/mcu/STM32G491V(C-E)Tx.xml
++++ b/stm32-devices/mcu/STM32G491V(C-E)Tx.xml
+@@ -2,7 +2,7 @@
+ <Mcu ClockTree="STM32G4-479" DBVersion="V3.0" Family="STM32G4" HasPowerPad="false" IOType="" Line="STM32G4x1" Package="LQFP100" RefName="STM32G491V(C-E)Tx" xmlns="http://mcd.rou.st.com/modules.php?name=mcu">
+     <Core>ARM Cortex-M4</Core>
+     <Frequency>170</Frequency>
+-    <Ram>128</Ram>
++    <Ram>112</Ram>
+     <IONb>86</IONb>
+     <Die>DIE479</Die>
+     <Flash>256</Flash>
+diff --git a/stm32-devices/mcu/STM32G4A1CETx.xml b/stm32-devices/mcu/STM32G4A1CETx.xml
+index 48f57b5..50733a7 100644
+--- a/stm32-devices/mcu/STM32G4A1CETx.xml
++++ b/stm32-devices/mcu/STM32G4A1CETx.xml
+@@ -2,7 +2,7 @@
+ <Mcu ClockTree="STM32G4-479" DBVersion="V3.0" Family="STM32G4" HasPowerPad="false" IOType="" Line="STM32G4x1" Package="LQFP48" RefName="STM32G4A1CETx" xmlns="http://mcd.rou.st.com/modules.php?name=mcu">
+     <Core>ARM Cortex-M4</Core>
+     <Frequency>170</Frequency>
+-    <Ram>128</Ram>
++    <Ram>112</Ram>
+     <IONb>38</IONb>
+     <Die>DIE479</Die>
+     <Flash>512</Flash>
+diff --git a/stm32-devices/mcu/STM32G4A1CEUx.xml b/stm32-devices/mcu/STM32G4A1CEUx.xml
+index b6f2e9e..d0401b7 100644
+--- a/stm32-devices/mcu/STM32G4A1CEUx.xml
++++ b/stm32-devices/mcu/STM32G4A1CEUx.xml
+@@ -2,7 +2,7 @@
+ <Mcu ClockTree="STM32G4-479" DBVersion="V3.0" Family="STM32G4" HasPowerPad="false" IOType="" Line="STM32G4x1" Package="UFQFPN48" RefName="STM32G4A1CEUx" xmlns="http://mcd.rou.st.com/modules.php?name=mcu">
+     <Core>ARM Cortex-M4</Core>
+     <Frequency>170</Frequency>
+-    <Ram>128</Ram>
++    <Ram>112</Ram>
+     <IONb>42</IONb>
+     <Die>DIE479</Die>
+     <Flash>512</Flash>
+diff --git a/stm32-devices/mcu/STM32G4A1KEUx.xml b/stm32-devices/mcu/STM32G4A1KEUx.xml
+index 1603692..ccc7c61 100644
+--- a/stm32-devices/mcu/STM32G4A1KEUx.xml
++++ b/stm32-devices/mcu/STM32G4A1KEUx.xml
+@@ -2,7 +2,7 @@
+ <Mcu ClockTree="STM32G4-479" DBVersion="V3.0" Family="STM32G4" HasPowerPad="false" IOType="" Line="STM32G4x1" Package="UFQFPN32" RefName="STM32G4A1KEUx" xmlns="http://mcd.rou.st.com/modules.php?name=mcu">
+     <Core>ARM Cortex-M4</Core>
+     <Frequency>170</Frequency>
+-    <Ram>128</Ram>
++    <Ram>112</Ram>
+     <IONb>26</IONb>
+     <Die>DIE479</Die>
+     <Flash>512</Flash>
+diff --git a/stm32-devices/mcu/STM32G4A1MESx.xml b/stm32-devices/mcu/STM32G4A1MESx.xml
+index 11d976a..b8e17e4 100644
+--- a/stm32-devices/mcu/STM32G4A1MESx.xml
++++ b/stm32-devices/mcu/STM32G4A1MESx.xml
+@@ -2,7 +2,7 @@
+ <Mcu ClockTree="STM32G4-479" DBVersion="V3.0" Family="STM32G4" HasPowerPad="false" IOType="" Line="STM32G4x1" Package="LQFP80" RefName="STM32G4A1MESx" xmlns="http://mcd.rou.st.com/modules.php?name=mcu">
+     <Core>ARM Cortex-M4</Core>
+     <Frequency>170</Frequency>
+-    <Ram>128</Ram>
++    <Ram>112</Ram>
+     <IONb>66</IONb>
+     <Die>DIE479</Die>
+     <Flash>512</Flash>
+diff --git a/stm32-devices/mcu/STM32G4A1METx.xml b/stm32-devices/mcu/STM32G4A1METx.xml
+index 5480d7d..1db94a7 100644
+--- a/stm32-devices/mcu/STM32G4A1METx.xml
++++ b/stm32-devices/mcu/STM32G4A1METx.xml
+@@ -2,7 +2,7 @@
+ <Mcu ClockTree="STM32G4-479" DBVersion="V3.0" Family="STM32G4" HasPowerPad="false" IOType="" Line="STM32G4x1" Package="LQFP80" RefName="STM32G4A1METx" xmlns="http://mcd.rou.st.com/modules.php?name=mcu">
+     <Core>ARM Cortex-M4</Core>
+     <Frequency>170</Frequency>
+-    <Ram>128</Ram>
++    <Ram>112</Ram>
+     <IONb>66</IONb>
+     <Die>DIE479</Die>
+     <Flash>512</Flash>
+diff --git a/stm32-devices/mcu/STM32G4A1REIx.xml b/stm32-devices/mcu/STM32G4A1REIx.xml
+index cadf888..d6b927c 100644
+--- a/stm32-devices/mcu/STM32G4A1REIx.xml
++++ b/stm32-devices/mcu/STM32G4A1REIx.xml
+@@ -2,7 +2,7 @@
+ <Mcu ClockTree="STM32G4-479" DBVersion="V3.0" Family="STM32G4" HasPowerPad="false" IOType="" Line="STM32G4x1" Package="UFBGA64" RefName="STM32G4A1REIx" xmlns="http://mcd.rou.st.com/modules.php?name=mcu">
+     <Core>ARM Cortex-M4</Core>
+     <Frequency>170</Frequency>
+-    <Ram>128</Ram>
++    <Ram>112</Ram>
+     <IONb>52</IONb>
+     <Die>DIE479</Die>
+     <Flash>512</Flash>
+diff --git a/stm32-devices/mcu/STM32G4A1RETx.xml b/stm32-devices/mcu/STM32G4A1RETx.xml
+index 1104460..1937790 100644
+--- a/stm32-devices/mcu/STM32G4A1RETx.xml
++++ b/stm32-devices/mcu/STM32G4A1RETx.xml
+@@ -2,7 +2,7 @@
+ <Mcu ClockTree="STM32G4-479" DBVersion="V3.0" Family="STM32G4" HasPowerPad="false" IOType="" Line="STM32G4x1" Package="LQFP64" RefName="STM32G4A1RETx" xmlns="http://mcd.rou.st.com/modules.php?name=mcu">
+     <Core>ARM Cortex-M4</Core>
+     <Frequency>170</Frequency>
+-    <Ram>128</Ram>
++    <Ram>112</Ram>
+     <IONb>52</IONb>
+     <Die>DIE479</Die>
+     <Flash>512</Flash>
+diff --git a/stm32-devices/mcu/STM32G4A1REYx.xml b/stm32-devices/mcu/STM32G4A1REYx.xml
+index b4429a5..3b6d972 100644
+--- a/stm32-devices/mcu/STM32G4A1REYx.xml
++++ b/stm32-devices/mcu/STM32G4A1REYx.xml
+@@ -2,7 +2,7 @@
+ <Mcu ClockTree="STM32G4-479" DBVersion="V3.0" Family="STM32G4" HasPowerPad="false" IOType="" Line="STM32G4x1" Package="WLCSP64" RefName="STM32G4A1REYx" xmlns="http://mcd.rou.st.com/modules.php?name=mcu">
+     <Core>ARM Cortex-M4</Core>
+     <Frequency>170</Frequency>
+-    <Ram>128</Ram>
++    <Ram>112</Ram>
+     <IONb>52</IONb>
+     <Die>DIE479</Die>
+     <Flash>512</Flash>
+diff --git a/stm32-devices/mcu/STM32G4A1VETx.xml b/stm32-devices/mcu/STM32G4A1VETx.xml
+index 58dcd13..b230c80 100644
+--- a/stm32-devices/mcu/STM32G4A1VETx.xml
++++ b/stm32-devices/mcu/STM32G4A1VETx.xml
+@@ -2,7 +2,7 @@
+ <Mcu ClockTree="STM32G4-479" DBVersion="V3.0" Family="STM32G4" HasPowerPad="false" IOType="" Line="STM32G4x1" Package="LQFP100" RefName="STM32G4A1VETx" xmlns="http://mcd.rou.st.com/modules.php?name=mcu">
+     <Core>ARM Cortex-M4</Core>
+     <Frequency>170</Frequency>
+-    <Ram>128</Ram>
++    <Ram>112</Ram>
+     <IONb>86</IONb>
+     <Die>DIE479</Die>
+     <Flash>512</Flash>
+diff --git a/stm32-devices/mcu/IP/DMA-STM32G0B1_dma1_v1_3_Modes.xml b/stm32-devices/mcu/IP/DMA-STM32G0B1_dma1_v1_3_Modes.xml
+index 16f4362..9843602 100644
+--- a/stm32-devices/mcu/IP/DMA-STM32G0B1_dma1_v1_3_Modes.xml
++++ b/stm32-devices/mcu/IP/DMA-STM32G0B1_dma1_v1_3_Modes.xml
+@@ -9,11 +9,6 @@
+         <PossibleValue Comment="DMA1 Channel 5" Value="DMA1_Channel5"/>
+         <PossibleValue Comment="DMA1 Channel 6" Value="DMA1_Channel6"/>
+         <PossibleValue Comment="DMA1 Channel 7" Value="DMA1_Channel7"/>
+-        <PossibleValue Comment="DMA1 Channel 8" Value="DMA1_Channel8"/>
+-        <PossibleValue Comment="DMA1 Channel 9" Value="DMA1_Channel9"/>
+-        <PossibleValue Comment="DMA1 Channel 10" Value="DMA1_Channel10"/>
+-        <PossibleValue Comment="DMA1 Channel 11" Value="DMA1_Channel11"/>
+-        <PossibleValue Comment="DMA1 Channel 12" Value="DMA1_Channel12"/>
+         <PossibleValue Comment="DMA2 Channel 1" Value="DMA2_Channel1"/>
+         <PossibleValue Comment="DMA2 Channel 2" Value="DMA2_Channel2"/>
+         <PossibleValue Comment="DMA2 Channel 3" Value="DMA2_Channel3"/>
+diff --git a/stm32-devices/mcu/IP/DMA-STM32U031_dma1_v1_3_Modes.xml b/stm32-devices/mcu/IP/DMA-STM32U031_dma1_v1_3_Modes.xml
+index 608b9c1..36ba5c7 100644
+--- a/stm32-devices/mcu/IP/DMA-STM32U031_dma1_v1_3_Modes.xml
++++ b/stm32-devices/mcu/IP/DMA-STM32U031_dma1_v1_3_Modes.xml
+@@ -16,8 +16,8 @@
+         <PossibleValue Comment="DMA_GENERATOR1" Value="DMA_REQUEST_GENERATOR1"/>
+         <PossibleValue Comment="DMA_GENERATOR2" Value="DMA_REQUEST_GENERATOR2"/>
+         <PossibleValue Comment="DMA_GENERATOR3" Value="DMA_REQUEST_GENERATOR3"/>
+-        <PossibleValue Comment="ADC1" Value="DMA_REQUEST_ADC"/>
+-        <PossibleValue Comment="DAC1_CH1" Value="DMA_REQUEST_DAC_CH1"/>
++        <PossibleValue Comment="ADC" Value="DMA_REQUEST_ADC"/>
++        <PossibleValue Comment="DAC_CH1" Value="DMA_REQUEST_DAC_CH1"/>
+         <PossibleValue Comment="I2C1_RX" Value="DMA_REQUEST_I2C1_RX"/>
+         <PossibleValue Comment="I2C1_TX" Value="DMA_REQUEST_I2C1_TX"/>
+         <PossibleValue Comment="I2C2_RX" Value="DMA_REQUEST_I2C2_RX"/>
+@@ -268,7 +268,7 @@
+             <PossibleValue>DMA</PossibleValue>
+         </Parameter>
+     </RefMode>
+-    <RefMode BaseMode="DMA_Request" Comment="ADC1" Name="ADC1">
++    <RefMode BaseMode="DMA_Request" Comment="ADC" Name="ADC">
+         <Parameter Name="Request">
+             <PossibleValue>DMA_REQUEST_ADC</PossibleValue>
+         </Parameter>
+@@ -283,13 +283,13 @@
+             <PossibleValue>DMA_CIRCULAR</PossibleValue>
+         </Parameter>
+         <Parameter Name="IpInstance">
+-            <PossibleValue>ADC1</PossibleValue>
++            <PossibleValue>ADC</PossibleValue>
+         </Parameter>
+         <Parameter Name="PeriphInc">
+             <PossibleValue>DMA_PINC_DISABLE</PossibleValue>
+         </Parameter>
+     </RefMode>
+-    <RefMode BaseMode="DMA_Request" Comment="DAC1_CH1" Name="DAC1_CH1">
++    <RefMode BaseMode="DMA_Request" Comment="DAC_CH1" Name="DAC_CH1">
+         <Parameter Name="Request">
+             <PossibleValue>DMA_REQUEST_DAC_CH1</PossibleValue>
+         </Parameter>
+@@ -304,7 +304,7 @@
+             <PossibleValue>DMA_CIRCULAR</PossibleValue>
+         </Parameter>
+         <Parameter Name="IpInstance">
+-            <PossibleValue>DAC1</PossibleValue>
++            <PossibleValue>DAC</PossibleValue>
+         </Parameter>
+         <Parameter Name="PeriphInc">
+             <PossibleValue>DMA_PINC_DISABLE</PossibleValue>
+@@ -1514,11 +1514,11 @@
+                         <Mode Name="DMA_GENERATOR1"/>
+                         <Mode Name="DMA_GENERATOR2"/>
+                         <Mode Name="DMA_GENERATOR3"/>
+-                        <Mode Name="ADC1">
+-                            <Semaphore>DMARequest_ADC1</Semaphore>
++                        <Mode Name="ADC">
++                            <Semaphore>DMARequest_ADC</Semaphore>
+                         </Mode>
+-                        <Mode Name="DAC1_CH1">
+-                            <Condition Diagnostic="" Expression="DAC1_OUT1_Conf"/>
++                        <Mode Name="DAC_CH1">
++                            <Condition Diagnostic="" Expression="DAC_OUT1_Conf"/>
+                         </Mode>
+                         <Mode Name="I2C1_RX">
+                             <Condition Diagnostic="" Expression="I2C1_Dma"/>
+diff --git a/stm32-devices/mcu/IP/DMA-STM32U073_dma1_v1_3_Modes.xml b/stm32-devices/mcu/IP/DMA-STM32U073_dma1_v1_3_Modes.xml
+index e2dea3b..6cc0446 100644
+--- a/stm32-devices/mcu/IP/DMA-STM32U073_dma1_v1_3_Modes.xml
++++ b/stm32-devices/mcu/IP/DMA-STM32U073_dma1_v1_3_Modes.xml
+@@ -26,10 +26,10 @@
+         <PossibleValue Comment="DMA_GENERATOR1" Value="DMA_REQUEST_GENERATOR1"/>
+         <PossibleValue Comment="DMA_GENERATOR2" Value="DMA_REQUEST_GENERATOR2"/>
+         <PossibleValue Comment="DMA_GENERATOR3" Value="DMA_REQUEST_GENERATOR3"/>
+-        <PossibleValue Comment="ADC1" Value="DMA_REQUEST_ADC"/>
++        <PossibleValue Comment="ADC" Value="DMA_REQUEST_ADC"/>
+         <PossibleValue Comment="AES_IN" Value="DMA_REQUEST_AES_IN"/>
+         <PossibleValue Comment="AES_OUT" Value="DMA_REQUEST_AES_OUT"/>
+-        <PossibleValue Comment="DAC1_CH1" Value="DMA_REQUEST_DAC_CH1"/>
++        <PossibleValue Comment="DAC_CH1" Value="DMA_REQUEST_DAC_CH1"/>
+         <PossibleValue Comment="I2C1_RX" Value="DMA_REQUEST_I2C1_RX"/>
+         <PossibleValue Comment="I2C1_TX" Value="DMA_REQUEST_I2C1_TX"/>
+         <PossibleValue Comment="I2C2_RX" Value="DMA_REQUEST_I2C2_RX"/>
+@@ -301,7 +301,7 @@
+             <PossibleValue>DMA</PossibleValue>
+         </Parameter>
+     </RefMode>
+-    <RefMode BaseMode="DMA_Request" Comment="ADC1" Name="ADC1">
++    <RefMode BaseMode="DMA_Request" Comment="ADC" Name="ADC">
+         <Parameter Name="Request">
+             <PossibleValue>DMA_REQUEST_ADC</PossibleValue>
+         </Parameter>
+@@ -316,7 +316,7 @@
+             <PossibleValue>DMA_CIRCULAR</PossibleValue>
+         </Parameter>
+         <Parameter Name="IpInstance">
+-            <PossibleValue>ADC1</PossibleValue>
++            <PossibleValue>ADC</PossibleValue>
+         </Parameter>
+         <Parameter Name="PeriphInc">
+             <PossibleValue>DMA_PINC_DISABLE</PossibleValue>
+@@ -364,7 +364,7 @@
+             <PossibleValue>DMA_PINC_DISABLE</PossibleValue>
+         </Parameter>
+     </RefMode>
+-    <RefMode BaseMode="DMA_Request" Comment="DAC1_CH1" Name="DAC1_CH1">
++    <RefMode BaseMode="DMA_Request" Comment="DAC_CH1" Name="DAC_CH1">
+         <Parameter Name="Request">
+             <PossibleValue>DMA_REQUEST_DAC_CH1</PossibleValue>
+         </Parameter>
+@@ -379,7 +379,7 @@
+             <PossibleValue>DMA_CIRCULAR</PossibleValue>
+         </Parameter>
+         <Parameter Name="IpInstance">
+-            <PossibleValue>DAC1</PossibleValue>
++            <PossibleValue>DAC</PossibleValue>
+         </Parameter>
+         <Parameter Name="PeriphInc">
+             <PossibleValue>DMA_PINC_DISABLE</PossibleValue>
+@@ -1810,13 +1810,13 @@
+                         <Mode Name="DMA_GENERATOR1"/>
+                         <Mode Name="DMA_GENERATOR2"/>
+                         <Mode Name="DMA_GENERATOR3"/>
+-                        <Mode Name="ADC1">
+-                            <Semaphore>DMARequest_ADC1</Semaphore>
++                        <Mode Name="ADC">
++                            <Semaphore>DMARequest_ADC</Semaphore>
+                         </Mode>
+                         <Mode Name="AES_IN"/>
+                         <Mode Name="AES_OUT"/>
+-                        <Mode Name="DAC1_CH1">
+-                            <Condition Diagnostic="" Expression="DAC1_OUT1_Conf"/>
++                        <Mode Name="DAC_CH1">
++                            <Condition Diagnostic="" Expression="DAC_OUT1_Conf"/>
+                         </Mode>
+                         <Mode Name="I2C1_RX">
+                             <Condition Diagnostic="" Expression="I2C1_Dma"/>
