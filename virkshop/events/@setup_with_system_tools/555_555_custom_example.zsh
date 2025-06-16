@@ -5,6 +5,7 @@
 alias ll="ls -l"
 touch "$HOME/.zsh_history"
 
+export PATH="$PATH:$PWD/run"
 export SCONS_LIB_DIR="$(dirname "$(dirname "$(which scons)")")/lib/python3.11/site-packages/scons"
 
 # 
