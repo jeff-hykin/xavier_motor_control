@@ -16,8 +16,9 @@
 # Examples of extra warehouses:
 
 # - (warehouse):
-#     saveVariableAs: "warehouseWithTorch_1_8_1"
-#     createWarehouseFrom: { tarFileUrl: "https://github.com/NixOS/nixpkgs/archive/141439f6f11537ee349a58aaf97a5a5fc072365c.tar.gz" }
+#     saveVariableAs: "sconsWarehouse"
+#     createWarehouseFrom: 
+#         tarFileUrl: "https://github.com/NixOS/nixpkgs/archive/05bbf675397d5366259409139039af8077d695ce.tar.gz"
 #     arguments:
 #         config: {}
     
@@ -147,11 +148,24 @@
     asBuildInput: true
 
 - (integrate):
-    package: ["scons"]
+    package: ["scons_3_1_2"]
+    asBuildInput: true
+    # from: !!var sconsWarehouse
+
+- (integrate):
+    package: [ "python311Packages", "pyelftools"]
     asBuildInput: true
 
 - (integrate):
-    package: [ "python311", "pyelftools"]
+    package: [ "python311Packages", "pip"]
+    asBuildInput: true
+
+- (integrate):
+    package: [ "python311Packages", "jinja2"]
+    asBuildInput: true
+
+- (integrate):
+    package: [ "python311Packages", "virtualenv"]
     asBuildInput: true
 
 # 
