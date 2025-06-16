@@ -15,6 +15,7 @@ if True:
 
     def set_pulse_width(duty_cycle_microseconds_delay):
         percent = (duty_cycle_microseconds_delay * FREQ) / 10000
+        print(f'''percent = {percent}''')
         pwm.ChangeDutyCycle(percent)
 
     
@@ -34,7 +35,7 @@ if True:
             print(f'''overshooting to {angle+20}''')
             # overshoot, then back off
             set_pulse_width(angle_to_pulse_with(angle+20))
-            time.sleep(0.1)
+            time.sleep(0.01)
             
         set_pulse_width(angle_to_pulse_with(angle))
         prev_angle = angle
