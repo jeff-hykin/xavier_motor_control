@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://gitlab.com/aruw/controls/taproot-scripts.git
+	branch = develop
+	commit = 5ab5966a7eee86ec062072b86618efcfdcf26d96
+	parent = 95aa02d29c928a0581d17a59e8bd35a65e0cc4a0
+	method = merge
+	cmdver = 0.4.5
