@@ -92,7 +92,7 @@ print("Configured {0} parallel build jobs (-j{0}), {1}"
 if args["TARGET_ENV"] == "hardware":
     program = env.Program(target=env["CONFIG_PROJECT_NAME"]+".elf", source=sources)
 
-    env.Append(CCFLAGS=["-Wno-deprecated-declarations"])
+    env.Append(CCFLAGS=["-Wno-deprecated-declarations", "-Wno-double-promotion","-Wno-class-memaccess"])
     
     # The executable depends on the linkerscript
     env.Depends(target=program, dependency=env["LINKERSCRIPT_FILE"])
