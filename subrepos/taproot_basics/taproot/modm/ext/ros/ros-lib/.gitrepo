@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/modm-io/ros-lib
+	branch = master
+	commit = 5a38d7aa3ebdb05ded0188db1414fe46e09afd5d
+	parent = a52f8b70ea6edf93456b876128d190cfcb391232
+	method = merge
+	cmdver = 0.4.5
