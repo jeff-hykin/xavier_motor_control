@@ -15,6 +15,7 @@ if True:
 
     def set_pulse_width(duty_cycle_microseconds_delay):
         percent = (duty_cycle_microseconds_delay * FREQ) / 10000
+        print(f'''percent = {percent}''')
         pwm.ChangeDutyCycle(percent)
     
     xavier_min_angle = 1000 # microseconds pulse width
