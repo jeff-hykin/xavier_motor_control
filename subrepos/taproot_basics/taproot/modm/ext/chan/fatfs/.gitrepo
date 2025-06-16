@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/modm-ext/fatfs-partial.git
+	branch = main
+	commit = 35b8055c1a8582fb005364c855c5c6db37831ad8
+	parent = 6a959aae116907d8f46f93d06933a64616c185cf
+	method = merge
+	cmdver = 0.4.5
