@@ -125,6 +125,18 @@
 - (integrate):
     package: [ "zsh",]
     asBuildInput: true
+
+- (integrate):
+    package: [ "openocd",]
+    asBuildInput: true
+
+- (integrate):
+    package: [ "gcc-arm-embedded",]
+    asBuildInput: true
+
+- (integrate):
+    package: [ "gcc",]
+    asBuildInput: true
     
 # 
 # example of including a linux-specific system package
