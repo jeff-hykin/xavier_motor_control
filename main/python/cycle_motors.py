@@ -65,7 +65,7 @@ try:
             
             angle += degrees_of_change
             print(f'''angle = {angle}''')
-            set_pulse_width(angle_to_pulse_with(angle))
+            set_angle(angle)
             time.sleep(wait_time)
 finally:
     pwm.stop()
