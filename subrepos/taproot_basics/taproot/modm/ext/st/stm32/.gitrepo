@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/modm-io/cmsis-header-stm32.git
+	branch = master
+	commit = aeb13e5ef18b62c834ba37f8b136e1376d80fb8d
+	parent = 64b88b5f583737722f87429248288947f5927dd7
+	method = merge
+	cmdver = 0.4.5
