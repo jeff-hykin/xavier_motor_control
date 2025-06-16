@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = git@github.com:modm-io/lbuild.git
+	branch = develop
+	commit = f594b4140219319d9d150bcbb467ce297c483402
+	parent = 5d9e6dedd3f270729951dc778c92b631513e299d
+	method = merge
+	cmdver = 0.4.5

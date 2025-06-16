@@ -1,0 +1,10 @@
+
+def init(module):
+    module.name = "module2"
+
+def prepare(module, options):
+    module.add_submodule("submodule3/module.lb")
+    return True
+
+def build(env):
+    pass

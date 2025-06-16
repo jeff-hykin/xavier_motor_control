@@ -1,0 +1,21 @@
+
+def init(module):
+	module.name = "module"
+	module.description = ""
+
+def prepare(module, options):
+	module.add_option(BooleanOption("fail", "Exit after validate", False))
+	return True
+
+def validate(env):
+	print("Validate")
+	if env["::fail"]:
+		raise ValidateException("Error during validate step!")
+
+def build(env):
+	env.add_metadata("include_path", "src")
+	env.add_metadata("include_path", "src")
+	env.add_metadata("include_path", "src2")
+
+def post_build(env, log):
+	print("Post-Build")

@@ -1,0 +1,17 @@
+
+def init(repo):
+	repo.name = "repo2"
+	
+	repo.add_option(
+	    StringOption(name="target",
+		             description="Target architecture for the library.",
+		             default="tree"))
+
+	repo.add_option(
+	    BooleanOption(name="include_tests",
+		              default=True,
+		              description="Include the unit-tests"))
+
+def prepare(repo, options):
+	# Find all modules with the name "module.lb"
+	repo.find_modules_recursive(".")

@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<library>
+	<repositories>
+		<repository>
+			<path>repo.lb</path>
+		</repository>
+	</repositories>
+
+	<outpath>build/folder</outpath>
+
+	<options>
+		<option name="repo:option">value</option>
+		<option name="repo:module:option">value</option>
+	</options>
+
+	<modules>
+		<module>repo:module</module>
+	</modules>
+</library>
