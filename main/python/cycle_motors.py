@@ -24,7 +24,7 @@ try:
     angle = 0
     change_amount = 10
     while True:
-        if angle + change_angle > 360 or angle + change_angle < 0:
+        if angle + change_amount > 360 or angle + change_amount < 0:
             change_amount = -change_amount
         
         angle += change_amount
