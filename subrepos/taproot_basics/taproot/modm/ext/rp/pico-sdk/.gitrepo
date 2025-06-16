@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/modm-ext/pico-sdk-partial.git
+	branch = main
+	commit = cab883fd4a0c81b0373f4c0f8cc4ef5767a4b29c
+	parent = 3f21e6cc037d0b569e2dd4498fa325074c52dfc9
+	method = merge
+	cmdver = 0.4.5
