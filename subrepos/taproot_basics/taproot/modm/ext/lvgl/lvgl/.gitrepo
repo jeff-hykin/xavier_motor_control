@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/modm-ext/lvgl-partial.git
+	branch = main
+	commit = cec93cb1a2d66a7b047e85867b0d125eed623c41
+	parent = 1b8b67c8b522f557ad2178c37c6760936149b31f
+	method = merge
+	cmdver = 0.4.5
