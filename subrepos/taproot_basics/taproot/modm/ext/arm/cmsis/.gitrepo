@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/modm-ext/cmsis-5-partial.git
+	branch = main
+	commit = c77dd09e5f345131564a816b2e92278fa5101b0c
+	parent = fd0296893449e03e51dfa7b298247dda69bf4278
+	method = merge
+	cmdver = 0.4.5
