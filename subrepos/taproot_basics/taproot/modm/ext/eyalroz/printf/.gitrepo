@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/modm-ext/printf-partial.git
+	branch = main
+	commit = 2c7d857481e4c0c82ec135d564a33a74470bee64
+	parent = 74d2b75de73dfaf00cd07f52a32d273caa267d80
+	method = merge
+	cmdver = 0.4.5
