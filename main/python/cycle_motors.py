@@ -10,6 +10,7 @@ GPIO.setup(PWM_PIN, GPIO.OUT)
 pwm = GPIO.PWM(PWM_PIN, FREQ)
 
 def set_pulse_width(duty_cycle_microseconds_delay):
+    print(f'''angle = {angle}''')
     percent = (duty_cycle_microseconds_delay * FREQ) / 10000
     pwm.ChangeDutyCycle(percent)
 
@@ -28,6 +29,7 @@ try:
             change_amount = -change_amount
         
         angle += change_amount
+        print(f'''angle = {angle}''')
         set_pulse_width(angle_to_pulse_with(angle))
         time.sleep(1)
 finally:
