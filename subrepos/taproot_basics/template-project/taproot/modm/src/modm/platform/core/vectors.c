@@ -17,7 +17,7 @@ void Undefined_Handler(void);
 /* Provide weak aliases for each Exception handler to Undefined_Handler.
  * As they are weak aliases, any function with the same name will override
  * this definition. */
-void Reset_Handler(void)						__attribute__((noreturn));
+void Reset_Handler(void);
 void NMI_Handler(void)							__attribute__((weak, alias("Undefined_Handler")));
 void HardFault_Handler(void)					__attribute__((weak, alias("Undefined_Handler")));
 void MemManage_Handler(void)					__attribute__((weak, alias("Undefined_Handler")));
@@ -75,7 +75,7 @@ void TIM8_UP_TIM13_IRQHandler(void)				__attribute__((weak, alias("Undefined_Han
 void TIM8_TRG_COM_TIM14_IRQHandler(void)		__attribute__((weak, alias("Undefined_Handler")));
 void TIM8_CC_IRQHandler(void)					__attribute__((weak, alias("Undefined_Handler")));
 void DMA1_Stream7_IRQHandler(void)				__attribute__((weak, alias("Undefined_Handler")));
-void FMC_IRQHandler(void)						__attribute__((weak, alias("Undefined_Handler")));
+void FSMC_IRQHandler(void)						__attribute__((weak, alias("Undefined_Handler")));
 void SDIO_IRQHandler(void)						__attribute__((weak, alias("Undefined_Handler")));
 void TIM5_IRQHandler(void)						__attribute__((weak, alias("Undefined_Handler")));
 void SPI3_IRQHandler(void)						__attribute__((weak, alias("Undefined_Handler")));
@@ -106,21 +106,13 @@ void OTG_HS_EP1_IN_IRQHandler(void)				__attribute__((weak, alias("Undefined_Han
 void OTG_HS_WKUP_IRQHandler(void)				__attribute__((weak, alias("Undefined_Handler")));
 void OTG_HS_IRQHandler(void)					__attribute__((weak, alias("Undefined_Handler")));
 void DCMI_IRQHandler(void)						__attribute__((weak, alias("Undefined_Handler")));
-void HASH_RNG_IRQHandler(void)					__attribute__((weak, alias("Undefined_Handler")));
+void RNG_IRQHandler(void)						__attribute__((weak, alias("Undefined_Handler")));
 void FPU_IRQHandler(void)						__attribute__((weak, alias("Undefined_Handler")));
-void UART7_IRQHandler(void)						__attribute__((weak, alias("Undefined_Handler")));
-void UART8_IRQHandler(void)						__attribute__((weak, alias("Undefined_Handler")));
-void SPI4_IRQHandler(void)						__attribute__((weak, alias("Undefined_Handler")));
-void SPI5_IRQHandler(void)						__attribute__((weak, alias("Undefined_Handler")));
-void SPI6_IRQHandler(void)						__attribute__((weak, alias("Undefined_Handler")));
-void SAI1_IRQHandler(void)						__attribute__((weak, alias("Undefined_Handler")));
-void DMA2D_IRQHandler(void)						__attribute__((weak, alias("Undefined_Handler")));
 // ----------------------------------------------------------------------------
 typedef void (* const FunctionPointer)(void);
 
 // defined in the linkerscript
 extern uint32_t __main_stack_top[];
-extern uint32_t __process_stack_top[];
 
 // Define the vector table
 modm_section(".vector_rom")
@@ -190,7 +182,7 @@ FunctionPointer vectorsRom[] =
 	TIM8_TRG_COM_TIM14_IRQHandler,			//  45
 	TIM8_CC_IRQHandler,						//  46
 	DMA1_Stream7_IRQHandler,				//  47
-	FMC_IRQHandler,							//  48
+	FSMC_IRQHandler,						//  48
 	SDIO_IRQHandler,						//  49
 	TIM5_IRQHandler,						//  50
 	SPI3_IRQHandler,						//  51
@@ -222,17 +214,8 @@ FunctionPointer vectorsRom[] =
 	OTG_HS_IRQHandler,						//  77
 	DCMI_IRQHandler,						//  78
 	Undefined_Handler,						//  79
-	HASH_RNG_IRQHandler,					//  80
+	RNG_IRQHandler,							//  80
 	FPU_IRQHandler,							//  81
-	UART7_IRQHandler,						//  82
-	UART8_IRQHandler,						//  83
-	SPI4_IRQHandler,						//  84
-	SPI5_IRQHandler,						//  85
-	SPI6_IRQHandler,						//  86
-	SAI1_IRQHandler,						//  87
-	Undefined_Handler,						//  88
-	Undefined_Handler,						//  89
-	DMA2D_IRQHandler,						//  90
 };
 // ----------------------------------------------------------------------------
 // Ignore redeclaration of interrupt handlers in vendor headers

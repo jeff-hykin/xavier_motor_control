@@ -9,12 +9,12 @@
  */
 // ----------------------------------------------------------------------------
 
-#ifndef MODM_STM32_PERIPHERALS_HPP
-#define MODM_STM32_PERIPHERALS_HPP
+#pragma once
 
 namespace modm::platform
 {
 
+/// @ingroup modm_platform_core
 enum class
 Peripheral
 {
@@ -29,10 +29,9 @@ Peripheral
 	Dcmi,
 	Dma1,
 	Dma2,
-	Dma2d,
 	Eth,
 	Flash,
-	Fmc,
+	Fsmc,
 	I2c1,
 	I2c2,
 	I2c3,
@@ -43,14 +42,10 @@ Peripheral
 	Rcc,
 	Rng,
 	Rtc,
-	Sai1,
 	Sdio,
 	Spi1,
 	Spi2,
 	Spi3,
-	Spi4,
-	Spi5,
-	Spi6,
 	Sys,
 	Tim1,
 	Tim10,
@@ -68,18 +63,15 @@ Peripheral
 	Tim9,
 	Uart4,
 	Uart5,
-	Uart7,
-	Uart8,
 	Usart1,
 	Usart2,
 	Usart3,
 	Usart6,
 	Usbotgfs,
 	Usbotghs,
+	Usbotghsulpi,
 	Wwdg,
 	Syscfg = Sys,
 };
 
 }
-
-#endif // MODM_STM32_PERIPHERALS_HPP

@@ -1,8 +1,9 @@
 /*
  * Copyright (c) 2011-2012, 2019, Fabian Greif
- * Copyright (c) 2012, 2015-2021, Niklas Hauser
+ * Copyright (c) 2012, 2015-2022, Niklas Hauser
  * Copyright (c) 2013, Sascha Schade
  * Copyright (c) 2013, 2015, Kevin Läufer
+ * Copyright (c) 2023, Christopher Durand
  *
  * This file is part of the modm project.
  *
@@ -12,16 +13,18 @@
  * ------------------------------------------------------------------------- */
 
 
+OUTPUT_FORMAT("elf32-littlearm")
+OUTPUT_ARCH(arm)
+ENTRY(Reset_Handler)
+
 MEMORY
 {
-	FLASH (rx) : ORIGIN = 0x08000000, LENGTH = 2097152
+	FLASH (rx) : ORIGIN = 0x08000000, LENGTH = 1048576
 	CCM (rw) : ORIGIN = 0x10000000, LENGTH = 65536
 	SRAM1 (rwx) : ORIGIN = 0x20000000, LENGTH = 114688
 	SRAM2 (rwx) : ORIGIN = 0x2001C000, LENGTH = 16384
-	SRAM3 (rwx) : ORIGIN = 0x20020000, LENGTH = 65536
 	BACKUP (rwx) : ORIGIN = 0x40024000, LENGTH = 4096
-	CONT_SRAM1 (rwx) : ORIGIN = 0x20000000, LENGTH = 196608
-    
+	CONT_SRAM1 (rwx) : ORIGIN = 0x20000000, LENGTH = 131072
 }
 
 __flash_start = ORIGIN(FLASH);
@@ -32,33 +35,35 @@ __sram1_start = ORIGIN(SRAM1);
 __sram1_end = ORIGIN(SRAM1) + LENGTH(SRAM1);
 __sram2_start = ORIGIN(SRAM2);
 __sram2_end = ORIGIN(SRAM2) + LENGTH(SRAM2);
-__sram3_start = ORIGIN(SRAM3);
-__sram3_end = ORIGIN(SRAM3) + LENGTH(SRAM3);
 __backup_start = ORIGIN(BACKUP);
 __backup_end = ORIGIN(BACKUP) + LENGTH(BACKUP);
-OUTPUT_FORMAT("elf32-littlearm")
-OUTPUT_ARCH(arm)
-ENTRY(Reset_Handler)
 
-/* the handler stack is used for main program as well as interrupts */
-MAIN_STACK_SIZE    = 3072;
-PROCESS_STACK_SIZE = 0;
-TOTAL_STACK_SIZE   = MAIN_STACK_SIZE + PROCESS_STACK_SIZE;
+
+MAIN_STACK_SIZE = 3072;
 
 SECTIONS
 {
 	__rom_start = ORIGIN(FLASH);
 
 
+	/* Read-only vector table in FLASH */
 	.text :
 	{
 		__vector_table_rom_start = .;
 		__vector_table_ram_load = .;
-		/* Initial stack address, Reset and NMI handler */
 		KEEP(*(.vector_rom))
+		__vector_table_rom_end = .;
 	} >FLASH
 
 
+	/* build id directly after vector table */
+	.build_id :
+	{
+		__build_id = .;
+		KEEP(*(.note.gnu.build-id))
+	} >FLASH
+
+	/* Read-only sections in FLASH */
 	.text :
 	{
 		*(.text .text.* .gnu.linkonce.t.*)
@@ -75,8 +80,8 @@ SECTIONS
 		KEEP(*(.init_array))
 		. = ALIGN(4);
 		__init_array_end = .;
+
 		__hardware_init_start = .;
-		/* Table symbols are alphabetically sorted! */
 		KEEP(*(SORT(.hardware_init.order_*)))
 		KEEP(*(SORT(.hardware_init)))
 		. = ALIGN(4);
@@ -86,23 +91,33 @@ SECTIONS
 		KEEP(*(.assertion))
 		. = ALIGN(4);
 		__assertion_table_end = .;
-
-		__build_id = .;
-		KEEP(*(.note.gnu.build-id))
 	} >FLASH
 
-	/* Unwind tables are used to unwind the stack for C++ exceptions. Even
-	 * though we disabled exceptions, pre-compiled libraries such as libstdc++
-	 * still have to raise exceptions. */
 	/DISCARD/ :
 	{
+		/* We do not call static destructors ever */
+		*(.fini_array .fini_array.*)
+		/* C++ exception unwind tables are discarded */
 		*(.ARM.extab* .gnu.linkonce.armextab.*)
 		*(.ARM.exidx* .gnu.linkonce.armexidx.*)
 		*(.eh_frame*)
 	}
 
 
+	/* Main stack in CONT_SRAM1 */
+	.stack (NOLOAD) :
+	{
+		__stack_start = .;
 
+		. += MAIN_STACK_SIZE;
+		. = ALIGN(8);
+		__main_stack_top = .;
+
+		__stack_end = .;
+	} >CONT_SRAM1
+
+
+	/* Read-write sections in CONT_SRAM1 */
 	.data :
 	{
 		. = ALIGN(4);
@@ -110,6 +125,7 @@ SECTIONS
 		__data_start = .;
 		*(.data .data.* .gnu.linkonce.d.*)
 		. = ALIGN(4);
+		__data_end = .;
 	} >CONT_SRAM1 AT >FLASH
 
 	.fastcode :
@@ -120,6 +136,7 @@ SECTIONS
 		. = ALIGN(4);
 		__fastcode_end = .;
 	} >CONT_SRAM1 AT >FLASH
+
 	.data_sram1 :
 	{
 		__data_sram1_load = LOADADDR(.data_sram1);
@@ -128,14 +145,12 @@ SECTIONS
 		. = ALIGN(4);
 		__data_sram1_end = .;
 	} >CONT_SRAM1 AT >FLASH
-	__data_end = .;
 
 	.bss (NOLOAD) :
 	{
 		__bss_start = . ;
 		*(.bss .bss.* .gnu.linkonce.b.*)
 		. = ALIGN(4);
-		__bss_end = .;
 	} >CONT_SRAM1
 
 	.bss_sram1 (NOLOAD) :
@@ -144,18 +159,28 @@ SECTIONS
 		*(.bss_sram1 .bss_sram1.*)
 		. = ALIGN(4);
 		__bss_sram1_end = .;
+		__bss_end = .;
 	} >CONT_SRAM1
-	__bss_end = .;
+
 
 	.noinit (NOLOAD) :
 	{
-		__noinit_start = .;
+		__noinit_start = . ;
 		*(.noinit .noinit.*)
 		. = ALIGN(4);
 		__noinit_end = .;
 	} >CONT_SRAM1
 
+	.faststack (NOLOAD) :
+	{
+		__faststack_start = . ;
+		*(.faststack .faststack.*)
+		. = ALIGN(4);
+		__faststack_end = .;
+	} >CONT_SRAM1
 
+
+	/* Sections in SRAM1 */
 	.noinit_sram1 (NOLOAD) :
 	{
 		. = ALIGN(4);
@@ -164,6 +189,7 @@ SECTIONS
 		. = ALIGN(4);
 		__noinit_sram1_end = .;
 	} >CONT_SRAM1
+
 	.heap_sram1 (NOLOAD) :
 	{
 		. = ALIGN(4);
@@ -172,16 +198,17 @@ SECTIONS
 		__heap_sram1_end = .;
 	} >CONT_SRAM1
 
+
+	/* Sections in SRAM2 */
+
 	.data_sram2 :
 	{
-		. = ALIGN(4);
 		__data_sram2_load = LOADADDR(.data_sram2);
 		__data_sram2_start = .;
 		*(.data_sram2 .data_sram2.*)
 		. = ALIGN(4);
+		__data_sram2_end = .;
 	} >CONT_SRAM1 AT >FLASH
-
-	__data_sram2_end = .;
 
 	.bss_sram2 (NOLOAD) :
 	{
@@ -191,6 +218,7 @@ SECTIONS
 		. = ALIGN(4);
 		__bss_sram2_end = .;
 	} >CONT_SRAM1
+
 	.noinit_sram2 (NOLOAD) :
 	{
 		. = ALIGN(4);
@@ -199,6 +227,7 @@ SECTIONS
 		. = ALIGN(4);
 		__noinit_sram2_end = .;
 	} >CONT_SRAM1
+
 	.heap_sram2 (NOLOAD) :
 	{
 		. = ALIGN(4);
@@ -207,54 +236,20 @@ SECTIONS
 		__heap_sram2_end = .;
 	} >CONT_SRAM1
 
-	.data_sram3 :
-	{
-		. = ALIGN(4);
-		__data_sram3_load = LOADADDR(.data_sram3);
-		__data_sram3_start = .;
-		*(.data_sram3 .data_sram3.*)
-		. = ALIGN(4);
-	} >CONT_SRAM1 AT >FLASH
-
-	__data_sram3_end = .;
-
-	.bss_sram3 (NOLOAD) :
-	{
-		. = ALIGN(4);
-		__bss_sram3_start = .;
-		*(.bss_sram3 .bss_sram3.*)
-		. = ALIGN(4);
-		__bss_sram3_end = .;
-	} >CONT_SRAM1
-	.noinit_sram3 (NOLOAD) :
-	{
-		. = ALIGN(4);
-		__noinit_sram3_start = .;
-		*(.noinit_sram3 .noinit_sram3.*)
-		. = ALIGN(4);
-		__noinit_sram3_end = .;
-	} >CONT_SRAM1
-	.heap_sram3 (NOLOAD) :
-	{
-		. = ALIGN(4);
-		__heap_sram3_start = .;
-		. = MAX(ABSOLUTE(.), ORIGIN(SRAM3) + LENGTH(SRAM3));
-		__heap_sram3_end = .;
-	} >CONT_SRAM1
 
 
 
+	/* Sections in memory region BACKUP */
 
 	.data_backup :
 	{
-		. = ALIGN(4);
 		__data_backup_load = LOADADDR(.data_backup);
 		__data_backup_start = .;
 		*(.data_backup .data_backup.*)
 		. = ALIGN(4);
+		__data_backup_end = .;
 	} >BACKUP AT >FLASH
 
-	__data_backup_end = .;
 
 	.bss_backup (NOLOAD) :
 	{
@@ -264,6 +259,7 @@ SECTIONS
 		. = ALIGN(4);
 		__bss_backup_end = .;
 	} >BACKUP
+
 	.noinit_backup (NOLOAD) :
 	{
 		. = ALIGN(4);
@@ -272,6 +268,7 @@ SECTIONS
 		. = ALIGN(4);
 		__noinit_backup_end = .;
 	} >BACKUP
+
 	.heap_backup (NOLOAD) :
 	{
 		. = ALIGN(4);
@@ -280,40 +277,26 @@ SECTIONS
 		__heap_backup_end = .;
 	} >BACKUP
 
-	.stack (NOLOAD) :
-	{
-		__stack_start = .;
+	/* Sections in memory region CCM */
 
-		. += MAIN_STACK_SIZE;
-		. = ALIGN(8);
-		__main_stack_top = .;
-
-		. += PROCESS_STACK_SIZE;
-		. = ALIGN(8);
-		__process_stack_top = .;
-
-		__stack_end = .;
-	} >CCM
-
-
-	/* CCM can only be accessed by D-Bus, do not place .fastcode here! */
 	.fastdata :
 	{
-		. = ALIGN(4);
 		__fastdata_load = LOADADDR(.fastdata);
 		__fastdata_start = .;
 		*(.fastdata .fastdata.*)
 		. = ALIGN(4);
+		__fastdata_end = .;
 	} >CCM AT >FLASH
 
 	.data_ccm :
 	{
+		__data_ccm_load = LOADADDR(.data_ccm);
 		__data_ccm_start = .;
 		*(.data_ccm .data_ccm.*)
 		. = ALIGN(4);
 		__data_ccm_end = .;
 	} >CCM AT >FLASH
-	__fastdata_end = .;
+
 
 	.bss_ccm (NOLOAD) :
 	{
@@ -323,6 +306,7 @@ SECTIONS
 		. = ALIGN(4);
 		__bss_ccm_end = .;
 	} >CCM
+
 	.noinit_ccm (NOLOAD) :
 	{
 		. = ALIGN(4);
@@ -331,6 +315,7 @@ SECTIONS
 		. = ALIGN(4);
 		__noinit_ccm_end = .;
 	} >CCM
+
 	.heap_ccm (NOLOAD) :
 	{
 		. = ALIGN(4);
@@ -339,9 +324,7 @@ SECTIONS
 		__heap_ccm_end = .;
 	} >CCM
 
-    
-
-
+	/* Memory layout configuration tables */
 	.rodata :
 	{
 		. = ALIGN(4);
@@ -350,8 +333,6 @@ SECTIONS
 		LONG(__bss_end)
 		LONG(__bss_sram2_start)
 		LONG(__bss_sram2_end)
-		LONG(__bss_sram3_start)
-		LONG(__bss_sram3_end)
 		LONG(__bss_backup_start)
 		LONG(__bss_backup_end)
 		LONG(__bss_ccm_start)
@@ -362,41 +343,33 @@ SECTIONS
 		LONG(__data_load)
 		LONG(__data_start)
 		LONG(__data_end)
+		LONG(__fastcode_load)
+		LONG(__fastcode_start)
+		LONG(__fastcode_end)
+		LONG(__data_sram1_load)
+		LONG(__data_sram1_start)
+		LONG(__data_sram1_end)
 		LONG(__data_sram2_load)
 		LONG(__data_sram2_start)
 		LONG(__data_sram2_end)
-		LONG(__data_sram3_load)
-		LONG(__data_sram3_start)
-		LONG(__data_sram3_end)
 		LONG(__data_backup_load)
 		LONG(__data_backup_start)
 		LONG(__data_backup_end)
 		LONG(__fastdata_load)
 		LONG(__fastdata_start)
 		LONG(__fastdata_end)
+		LONG(__data_ccm_load)
+		LONG(__data_ccm_start)
+		LONG(__data_ccm_end)
 		__table_copy_intern_end = .;
 
 		__table_zero_extern_start = .;
-        
 		__table_zero_extern_end = .;
+
 		__table_copy_extern_start = .;
-        
 		__table_copy_extern_end = .;
 
-		/* SRAM properties bit mask (16-bit):
-		 *
-		 * - 0x0001: accessible via S-Bus
-		 * - 0x0002: accessible via D-Bus
-		 * - 0x0004: accessible via I-Bus
-		 * - 0x0008: accessible via DMA
-		 * - 0x0010: accessible via DMA2D
-		 *
-		 * - 0x1FE0: reserved
-		 *
-		 * - 0x2000: Fast memory (Core- or Tightly-Coupled)
-		 * - 0x4000: non-volatile (or battery backed) memory
-		 * - 0x8000: external memory
-		 */
+		/* See `modm:architecture:memory` for bitmask */
 		__table_heap_start = .;
 		LONG(0x001f)
 		LONG(__heap_sram1_start)
@@ -404,18 +377,13 @@ SECTIONS
 		LONG(0x001f)
 		LONG(__heap_sram2_start)
 		LONG(__heap_sram2_end)
-		LONG(0x001f)
-		LONG(__heap_sram3_start)
-		LONG(__heap_sram3_end)
 		LONG(0x4009)
 		LONG(__heap_backup_start)
 		LONG(__heap_backup_end)
 		LONG(0x2002)
 		LONG(__heap_ccm_start)
 		LONG(__heap_ccm_end)
-        
 		__table_heap_end = .;
-
 	} >FLASH
 
 

@@ -60,7 +60,7 @@ UsartHal3::initialize(Parity parity, WordLength length)
 
 	constexpr uint32_t scalar = (baudrate * 16 > SystemClock::Usart3) ? 8 : 16;
 	constexpr uint32_t max = ((scalar == 16) ? (1ul << 16) : (1ul << 15)) - 1ul;
-	constexpr auto result = Prescaler::from_range(SystemClock::Usart3, baudrate, 1, max);
+	constexpr auto result = Prescaler::from_linear(SystemClock::Usart3, baudrate, scalar, max);
 	modm::PeripheralDriver::assertBaudrateInTolerance< result.frequency, baudrate, tolerance >();
 
 	uint32_t cr1 = USART3->CR1;
@@ -155,6 +155,12 @@ bool
 UsartHal3::isTransmitRegisterEmpty()
 {
 	return USART3->SR & USART_SR_TXE;
+}
+
+bool
+UsartHal3::isTransmissionComplete()
+{
+	return USART3->SR & USART_SR_TC;
 }
 
 void

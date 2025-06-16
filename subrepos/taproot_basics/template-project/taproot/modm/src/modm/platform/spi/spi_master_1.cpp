@@ -16,54 +16,6 @@
 
 #include "spi_master_1.hpp"
 
-// Bit0: single transfer state
-// Bit1: block transfer state
-uint8_t
-modm::platform::SpiMaster1::state(0);
-
-uint8_t
-modm::platform::SpiMaster1::count(0);
-
-void *
-modm::platform::SpiMaster1::context(nullptr);
-
-modm::Spi::ConfigurationHandler
-modm::platform::SpiMaster1::configuration(nullptr);
-// ----------------------------------------------------------------------------
-
-uint8_t
-modm::platform::SpiMaster1::acquire(void *ctx, ConfigurationHandler handler)
-{
-	if (context == nullptr)
-	{
-		context = ctx;
-		count = 1;
-		// if handler is not nullptr and is different from previous configuration
-		if (handler and configuration != handler) {
-			configuration = handler;
-			configuration();
-		}
-		return 1;
-	}
-
-	if (ctx == context)
-		return ++count;
-
-	return 0;
-}
-
-uint8_t
-modm::platform::SpiMaster1::release(void *ctx)
-{
-	if (ctx == context)
-	{
-		if (--count == 0)
-			context = nullptr;
-	}
-	return count;
-}
-// ----------------------------------------------------------------------------
-
 modm::ResumableResult<uint8_t>
 modm::platform::SpiMaster1::transfer(uint8_t data)
 {

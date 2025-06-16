@@ -8,3 +8,5 @@ docs/doxyoutput
 gcov-result
 **/.DS_Store
 .sconsign
+
+modm-project-files/*
