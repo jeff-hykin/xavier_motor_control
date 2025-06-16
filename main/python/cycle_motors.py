@@ -45,8 +45,8 @@ try:
     pwm.start(0)
     while 1:
         angle = 110 # start 
-        degrees_of_change = 10
-        wait_time = 0.2 # sec
+        degrees_of_change = 5
+        wait_time = 0.5 # sec
         while True:
             if angle + degrees_of_change > 200 or angle + degrees_of_change < 109:
                 degrees_of_change = -degrees_of_change
