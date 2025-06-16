@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/modm-ext/freertos-partial.git
+	branch = master
+	commit = 2422cfeebc1dc38c837f0fda778802e800132d7a
+	parent = ac98e0a38c54cbb649478af194abb7921ed3c4b6
+	method = merge
+	cmdver = 0.4.5

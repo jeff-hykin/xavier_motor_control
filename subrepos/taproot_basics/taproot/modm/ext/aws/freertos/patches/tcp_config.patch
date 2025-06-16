@@ -1,0 +1,14 @@
+diff --git a/FreeRTOS-Plus-TCP/source/include/FreeRTOSIPConfigDefaults.h b/FreeRTOS-Plus-TCP/source/include/FreeRTOSIPConfigDefaults.h
+index bbbab54..317696d 100644
+--- a/FreeRTOS-Plus-TCP/source/include/FreeRTOSIPConfigDefaults.h
++++ b/FreeRTOS-Plus-TCP/source/include/FreeRTOSIPConfigDefaults.h
+@@ -467,7 +467,7 @@
+     #endif /* _WINDOWS_ */
+ #endif /* ipconfigMAXIMUM_DISCOVER_TX_PERIOD */
+
+-#if ( ipconfigUSE_DNS == 0 )
++#if defined(ipconfigUSE_DNS) && ( ipconfigUSE_DNS == 0 )
+     /* The DNS module will not be included. */
+     #if ( ( ipconfigUSE_LLMNR != 0 ) || ( ipconfigUSE_NBNS != 0 ) )
+         /* LLMNR and NBNS depend on DNS because those protocols share a lot of code. */
+
