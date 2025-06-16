@@ -34,8 +34,9 @@ try:
         set_pulse_width(angle_to_pulse_with(270))
         time.sleep(1)
         
-        pwm.start(angle_to_pulse_with(359))
+        set_pulse_width(angle_to_pulse_with(360))
         time.sleep(1)
+        
 finally:
     pwm.stop()
     GPIO.cleanup()
