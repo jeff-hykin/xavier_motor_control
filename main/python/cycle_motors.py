@@ -14,17 +14,26 @@ if True:
     pwm = GPIO.PWM(PWM_PIN, FREQ)
 
     def set_pulse_width(duty_cycle_microseconds_delay):
-        print(f'''angle = {angle}''')
         percent = (duty_cycle_microseconds_delay * FREQ) / 10000
         pwm.ChangeDutyCycle(percent)
 
-
+    
+    
     xavier_min_angle = 1000 # microseconds pulse width
     xavier_max_angle = 2000 # microseconds pulse width
     def angle_to_pulse_with(angle):
         # (0 to 360) to (1000 to 2000)
         return ((angle % 360/360)*1000)+1000
 
+    prev_angle = 720
+    def set_angle(angle):
+        # not a big enough change
+        if abs((angle - prev_angle) % 360) < 20:
+            # overshoot, then back off
+            set_pulse_width(angle_to_pulse_with(angle+20))
+            
+        set_pulse_width(angle_to_pulse_with(angle))
+        
 
 
 # 
