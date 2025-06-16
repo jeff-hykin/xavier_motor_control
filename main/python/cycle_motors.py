@@ -22,6 +22,7 @@ def angle_to_pulse_with(angle):
     return ((angle % 360/360)*1000)+1000
 
 try:
+    pwm.start(0)
     angle = 0
     change_amount = 10
     while True:
