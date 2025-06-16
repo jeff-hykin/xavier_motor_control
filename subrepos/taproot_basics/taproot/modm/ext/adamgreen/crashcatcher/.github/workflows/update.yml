@@ -1,0 +1,45 @@
+name: Update
+
+on:
+  schedule:
+    - cron:  '58 7 * * 3'
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  update:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Configure Git
+        run: |
+          git config --global user.email "bot@modm.io"
+          git config --global user.name "modm update bot"
+      - name: Run update.py script
+        run: |
+          python3 update.py
+      - name: Test CrashDebug executable
+        shell: python
+        run: |
+          import subprocess
+          import sys
+          p = subprocess.run("CrashDebug/bins/lin64/CrashDebug", capture_output=True)
+          print(p.stderr)
+          print("Return code: {}".format(p.returncode))
+          if (p.returncode != 255) or ("CrashDebug - Cortex-M Post-Mortem Debugging" not in str(p.stderr)):
+            print("Unexpected return code or stderr")
+            sys.exit(1)
+      - name: Git push
+        if: github.ref == 'refs/heads/master'
+        run: |
+          git push origin master
+
+  keep-alive:
+    runs-on: ubuntu-22.04
+    permissions:
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gautamkrishnar/keepalive-workflow@v2
+

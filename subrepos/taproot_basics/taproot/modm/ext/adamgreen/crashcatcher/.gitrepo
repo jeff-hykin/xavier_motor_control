@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/modm-ext/CrashCatcher-partial.git
+	branch = master
+	commit = a232551950682128f31d4aefc92c11efa4a16e24
+	parent = eae1ab42c159cb4b7ed869b53cdd3fba04452c67
+	method = merge
+	cmdver = 0.4.5
