@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/modm-ext/tinyusb-partial.git
+	branch = master
+	commit = 7a740554486a20600a3d1f3298adc2b31bf60c11
+	parent = 53cddc30e46178eb8037ee0f1b093ece9fb878fe
+	method = merge
+	cmdver = 0.4.5
