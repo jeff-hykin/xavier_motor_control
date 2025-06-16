@@ -1,0 +1,76 @@
+/*
+ * Copyright (c) 2017, Niklas Hauser
+ *
+ * This file is part of the modm project.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+// ----------------------------------------------------------------------------
+
+#pragma once
+
+#include "define.h"
+#include <modm/architecture/interface/gpio.hpp>
+
+namespace modm::platform
+{
+
+/// @ingroup modm_platform_core
+enum class
+Peripheral
+{
+	BitBang,
+%% for per in all_peripherals
+	{{ per }},
+%% endfor
+};
+
+/// @ingroup	modm_platform_gpio
+struct Gpio
+{
+	/// Each Input Pin can be configured in one of these states.
+	enum class
+	InputType : uint8_t
+	{
+		Floating,	///< The input pin is left floating
+		PullUp,		///< The input pin is pulled to Vcc
+	};
+
+	enum class
+	OutputType : uint8_t
+	{
+		PushPull	///< push-pull on output
+	};
+
+	/// Each External Interrupt can be configured to trigger on these conditions.
+	enum class
+	InputTrigger : uint8_t
+	{
+		LowLevel = 0b00,	///< triggers **continuously** during low level
+		BothEdges = 0b01,	///< triggers on both rising and falling edge
+		FallingEdge = 0b10,	///< triggers on falling edge
+		RisingEdge = 0b11,	///< triggers on rising edge
+	};
+
+	/// Available ports on this device.
+	enum class
+	Port
+	{
+%% for port in ports
+		{{ port | upper }},
+%% endfor
+	};
+
+	enum class
+	Signal
+	{
+		BitBang,
+%% for signal in all_signals
+		{{ signal }},
+%% endfor
+	};
+};
+
+}	// namespace modm::platform

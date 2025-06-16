@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2016-2018, Niklas Hauser
+# Copyright (c) 2017, Fabian Greif
+# Copyright (c) 2020, Erik Henriksson
+# Copyright (c) 2022, Christopher Durand
+#
+# This file is part of the modm project.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+# -----------------------------------------------------------------------------
+
+import copy
+from collections import defaultdict, OrderedDict
+
+def port_ranges(gpios):
+    ports = {p: (32, 0) for p in set(p["port"] for p in gpios)}
+    for gpio in gpios:
+        pin = int(gpio["pin"])
+        pmin, pmax = ports[gpio["port"]]
+        ports[gpio["port"]] = (min(pin, pmin), max(pin, pmax))
+
+    ports = [{"name": k.upper(), "start": v[0], "width": v[1] - v[0] + 1} for k,v in ports.items()]
+    ports.sort(key=lambda p: p["name"])
+    return ports
+
+bprops = {}
+
+def init(module):
+    module.name = ":platform:gpio"
+    module.description = "General Purpose I/O (GPIO)"
+
+def prepare(module, options):
+    device = options[":target"]
+    if not device.has_driver("gpio:sam*"):
+        return False
+
+    bprops["ranges"] = port_ranges(device.get_driver("gpio")["gpio"])
+    bprops["ports"] = OrderedDict([(k, i) for i, k in enumerate([p["name"] for p in bprops["ranges"]])])
+
+    module.add_set_option(
+        EnumerationOption(
+            name="enable_ports",
+            description="Enable clock for these GPIO ports during startup",
+            enumeration=list(bprops["ports"].keys())),
+        default=list(bprops["ports"].keys()))
+
+    module.depends(
+        ":architecture:gpio",
+        ":cmsis:device",
+        ":math:utils")
+    return True
+
+def validate(env):
+    device = env[":target"]
+    driver = device.get_driver("gpio")
+
+def build(env):
+    device = env[":target"]
+    driver = device.get_driver("gpio")
+
+    peripherals = OrderedDict()
+    for gpio in driver["gpio"]:
+        signals = []
+        for signal in gpio.get("signal", []):
+            signal.update({
+                "peripheral": signal["driver"].capitalize(),
+                "function": signal["function"].capitalize(),
+                "name": signal["name"].capitalize(),
+            })
+            # This is a hack for L variant devices, which have a Ac without instance *and*
+            # a Ac with instance 1. Why???
+            if (device.identifier.get("variant") == "l"
+                    and signal["peripheral"] == "Ac"
+                    and (not "instance" in signal or signal["instance"] == "")):
+                signal["instance"] = "0"
+            signal["full_name"] = signal["peripheral"]
+            peripheral = peripherals.setdefault(signal["peripheral"], dict())
+            if "instance" in signal:
+                signal["full_name"] += signal["instance"]
+                try:
+                    signal["instance"] = int(signal["instance"])
+                except ValueError:
+                    # On SAMV devices, some signals (e.g. PIODC/data capture) belong to
+                    # PIOs, and have alphabetic instance values. The config.hpp.in
+                    # template requires integers, so convert "a", "b", "c" etc to
+                    # integer values
+                    if len(signal["instance"]) == 1:
+                        signal["instance"] = ord(signal["instance"].lower()) - ord("a")
+                    else:
+                        raise ValueError(f"Encountered invalid signal instance {signal['instance']}")
+                peripheral.setdefault("instances", set()).add(signal["instance"])
+            signal["full_name"] += signal["name"]
+            p_signal = peripheral.setdefault("signals", dict()).setdefault(signal["name"], set())
+            if "index" in signal:
+                signal["full_name"] += signal["index"]
+                signal["index"] = int(signal["index"])
+                p_signal.add(signal["index"])
+            signals.append(signal)
+        # remove duplicated dicts from list of dicts
+        signals = [dict(t) for t in {tuple(d.items()) for d in signals}]
+        gpio["signal"] = signals
+
+    # add peripherals without gpio signals
+    # the generated types are used in the clock driver api to enable the peripheral clocks
+    for peripheral_clock in env.query(":cmsis:device:clock-map").keys():
+        name, instance = (peripheral_clock[0].capitalize(), peripheral_clock[1])
+        if name not in peripherals:
+            if instance:
+                peripherals[name] = {"signals" : {}, "instances" : {}}
+            else:
+                peripherals[name] = {"signals" : {}}
+
+    bprops["peripherals"] = OrderedDict(sorted(peripherals.items()))
+    bprops["functions"] = sorted(list(set(s["function"] for gpio in driver["gpio"] for s in gpio["signal"])))
+
+    bprops["target"] = device.identifier
+
+    env.substitutions = bprops
+    env.outbasepath = "modm/src/modm/platform/gpio"
+
+    bprops["gpios"] = driver["gpio"]
+    env.template("config.hpp.in")
+    env.copy("connector.hpp")
+    if len(env["enable_ports"]):
+        env.template("enable.cpp.in")
+    env.template("pin.hpp.in")
+    env.template("software_port.hpp.in")
+    env.copy("unused.hpp")
+    env.copy("../common/inverted.hpp", "inverted.hpp")

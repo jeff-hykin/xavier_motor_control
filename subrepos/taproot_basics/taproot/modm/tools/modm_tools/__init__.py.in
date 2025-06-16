@@ -1,0 +1,14 @@
+# modm Python tools
+__all__ = [
+%% for tool in tools | sort
+    "{{ tool }}",
+%% endfor
+]
+
+%% for tool in tools | sort
+from . import {{ tool }}
+%% endfor
+
+import sys, warnings
+if not sys.warnoptions:
+    warnings.filterwarnings("ignore", category=RuntimeWarning, module="runpy")

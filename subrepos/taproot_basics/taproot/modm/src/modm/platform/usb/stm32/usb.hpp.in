@@ -1,0 +1,154 @@
+/*
+* Copyright (c) 2020, Erik Henriksson
+* Copyright (c) 2020, 2024, Niklas Hauser
+*
+* This file is part of the modm project.
+*
+* This Source Code Form is subject to the terms of the Mozilla Public
+* License, v. 2.0. If a copy of the MPL was not distributed with this
+* file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+// ----------------------------------------------------------------------------
+
+#pragma once
+
+#include <modm/platform/device.hpp>
+#include <modm/platform/gpio/connector.hpp>
+
+%% set name = "Usb" ~ port | capitalize
+
+namespace modm::platform
+{
+
+/// @ingroup modm_platform_usb modm_platform_usb_{{port}}
+class {{ name }}
+{
+public:
+	template< class SystemClock >
+	static void
+	initialize(uint8_t priority=3)
+	{
+		static_assert(SystemClock::Usb == 48_MHz, "{{ name }} must have a 48MHz clock!");
+%% if target.family in ["g0", "l4", "l5"]
+#ifdef PWR_CR2_USV
+		PWR->CR2 |= PWR_CR2_USV;
+#endif
+%% elif target.family in ["h5"]
+#ifdef PWR_USBSCR_USB33DEN
+		PWR->USBSCR |= PWR_USBSCR_USB33DEN;
+#endif
+%% elif target.family in ["h7"]
+#ifdef PWR_CR3_USB33DEN
+		PWR->CR3 |= PWR_CR3_USB33DEN;
+#endif
+%% endif
+		Rcc::enable<Peripheral::{{ peripheral }}>();
+%% if is_remap
+		SYSCFG->CFGR1 |= SYSCFG_CFGR1_USB_IT_RMP;
+%% endif
+%% for irq in irqs | sort
+		NVIC_SetPriority({{ irq }}_IRQn, priority);
+%% endfor
+	}
+
+	template< class... Signals >
+	static void
+	connect()
+	{
+		using Connector = GpioConnector<Peripheral::{{ peripheral }}, Signals...>;
+		using Dp = typename Connector::template GetSignal< Gpio::Signal::Dp >;
+		using Dm = typename Connector::template GetSignal< Gpio::Signal::Dm >;
+%% if is_otg
+		using Id = typename Connector::template GetSignal< Gpio::Signal::Id >;
+%% endif
+		static constexpr bool all_usb =
+			Connector::template IsValid<Dp> and Connector::template IsValid<Dm>;
+%% if is_ulpi
+		static constexpr bool any_usb =
+			Connector::template IsValid<Dp> or Connector::template IsValid<Dm>;
+
+		using Ulpick = typename Connector::template GetSignal< Gpio::Signal::Ulpick >;
+		using Ulpistp = typename Connector::template GetSignal< Gpio::Signal::Ulpistp >;
+		using Ulpidir = typename Connector::template GetSignal< Gpio::Signal::Ulpidir >;
+		using Ulpinxt = typename Connector::template GetSignal< Gpio::Signal::Ulpinxt >;
+		using Ulpid0 = typename Connector::template GetSignal< Gpio::Signal::Ulpid0 >;
+		using Ulpid1 = typename Connector::template GetSignal< Gpio::Signal::Ulpid1 >;
+		using Ulpid2 = typename Connector::template GetSignal< Gpio::Signal::Ulpid2 >;
+		using Ulpid3 = typename Connector::template GetSignal< Gpio::Signal::Ulpid3 >;
+		using Ulpid4 = typename Connector::template GetSignal< Gpio::Signal::Ulpid4 >;
+		using Ulpid5 = typename Connector::template GetSignal< Gpio::Signal::Ulpid5 >;
+		using Ulpid6 = typename Connector::template GetSignal< Gpio::Signal::Ulpid6 >;
+		using Ulpid7 = typename Connector::template GetSignal< Gpio::Signal::Ulpid7 >;
+
+		static constexpr bool all_ulpi =
+			Connector::template IsValid< Ulpick > and
+			Connector::template IsValid< Ulpistp > and
+			Connector::template IsValid< Ulpidir > and
+			Connector::template IsValid< Ulpinxt > and
+			Connector::template IsValid< Ulpid0 > and
+			Connector::template IsValid< Ulpid1 > and
+			Connector::template IsValid< Ulpid2 > and
+			Connector::template IsValid< Ulpid3 > and
+			Connector::template IsValid< Ulpid4 > and
+			Connector::template IsValid< Ulpid5 > and
+			Connector::template IsValid< Ulpid6 > and
+			Connector::template IsValid< Ulpid7 >;
+		static constexpr bool any_ulpi =
+			Connector::template IsValid< Ulpick > or
+			Connector::template IsValid< Ulpistp > or
+			Connector::template IsValid< Ulpidir > or
+			Connector::template IsValid< Ulpinxt > or
+			Connector::template IsValid< Ulpid0 > or
+			Connector::template IsValid< Ulpid1 > or
+			Connector::template IsValid< Ulpid2 > or
+			Connector::template IsValid< Ulpid3 > or
+			Connector::template IsValid< Ulpid4 > or
+			Connector::template IsValid< Ulpid5 > or
+			Connector::template IsValid< Ulpid6 > or
+			Connector::template IsValid< Ulpid7 >;
+
+		static_assert((any_ulpi xor any_usb) and (all_ulpi or all_usb),
+			"{{ name }}::connect() requires at least Dp, Dm (+Id) signals OR 12 ULPI signals:\n"
+			"    - CK\n"
+			"    - STP\n"
+			"    - DIR\n"
+			"    - NXT\n"
+			"    - D0\n"
+			"    - D1\n"
+			"    - D2\n"
+			"    - D3\n"
+			"    - D4\n"
+			"    - D5\n"
+			"    - D6\n"
+			"    - D7");
+
+		if constexpr (all_ulpi and not all_usb)
+		{
+			Rcc::enable<Peripheral::{{ peripheral }}ulpi>();
+			GpioSet< Ulpick, Ulpistp, Ulpidir, Ulpinxt, Ulpid0, Ulpid1,
+					 Ulpid2, Ulpid3, Ulpid4, Ulpid5, Ulpid6, Ulpid7>::configure(
+					Gpio::OutputType::PushPull, Gpio::OutputSpeed::High);
+		}
+		else if constexpr (not all_ulpi and all_usb)
+		{
+			Rcc::disable<Peripheral::{{ peripheral }}ulpi>();
+%% set idt = "\t"
+%% else
+		static_assert(all_usb and sizeof...(Signals) >= 2,
+					  "{{ name }}::connect() requires at least one Dp and one Dm signal!");
+%% set idt = ""
+%% endif
+		{{idt}}GpioSet<Dp, Dm>::configure(Gpio::OutputType::PushPull, Gpio::OutputSpeed::High);
+%% if is_otg
+		{{idt}}Id::configure(Gpio::OutputType::OpenDrain, Gpio::OutputSpeed::High);
+		{{idt}}Id::configure(Gpio::InputType::PullUp);
+%% endif
+%% if is_ulpi
+		}
+%% endif
+
+		Connector::connect();
+	}
+};
+
+} // namespace modm::platform

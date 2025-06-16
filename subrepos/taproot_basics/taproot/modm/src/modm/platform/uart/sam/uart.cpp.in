@@ -1,0 +1,138 @@
+/*
+ * Copyright (c) 2021, Jeff McBride
+ * Copyright (c) 2022, Christopher Durand
+ *
+ * This file is part of the modm project.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+// ----------------------------------------------------------------------------
+
+#include "{{ type }}_{{ id }}.hpp"
+
+#include <modm/architecture/driver/atomic/queue.hpp>
+
+%% set name="{}{}".format(type.capitalize(), id)
+%% set reg=name.upper()
+%% if type == "usart" and target.family == "e7x/s7x/v7x" and target.variant == "b"
+%% set reg_suffix="_USART"
+%% else
+%% set reg_suffix=""
+%% endif
+
+namespace
+{
+	static modm::atomic::Queue<uint8_t, {{ options["buffer.rx"] }}> rxBuffer;
+	static modm::atomic::Queue<uint8_t, {{ options["buffer.tx"] }}> txBuffer;
+}
+
+MODM_ISR({{ peripheral | upper }}{{ id }})
+{
+	using namespace modm::platform;
+	if({{ name }}::isReceiveReady()) {
+		uint8_t data = (uint8_t){{ name }}::Regs()->{{ prefix }}_RHR;
+		{{ name }}::read(data);
+		rxBuffer.push(data);
+	}
+
+	if({{ name }}::isTransmitReady()) {
+		if(txBuffer.isEmpty()) {
+			{{ name }}::Regs()->{{ prefix }}_IDR = {{ prefix }}_IDR{{reg_suffix}}_TXRDY_Msk;
+		} else {
+			{{ name }}::Regs()->{{ prefix }}_THR = txBuffer.get();
+			txBuffer.pop();
+		}
+	}
+}
+
+namespace modm::platform
+{
+
+bool
+{{ name }}::read(uint8_t &dataOut) {
+	if(rxBuffer.isEmpty()) {
+		return false;
+	} else {
+		dataOut = rxBuffer.get();
+		rxBuffer.pop();
+		return true;
+	}
+}
+
+std::size_t
+{{ name }}::read(uint8_t *data, std::size_t length) {
+	uint32_t i = 0;
+	for(; i < length; i++) {
+		if(rxBuffer.isEmpty()) {
+			return i;
+		} else {
+			data[i] = rxBuffer.get();
+			rxBuffer.pop();
+		}
+	}
+	return i;
+}
+
+bool
+{{ name }}::write(uint8_t data)
+{
+	if(txBuffer.isEmpty() && isTransmitReady()) {
+		Regs()->{{ prefix }}_THR = data;
+	} else {
+		if(!txBuffer.push(data)) {
+			return false;
+		}
+		// Enable tx interrupt
+		Regs()->{{ prefix }}_IER = {{ prefix }}_IER{{reg_suffix}}_TXRDY_Msk;
+	}
+	return true;
+}
+
+std::size_t
+{{ name }}::write(const uint8_t *data, std::size_t length)
+{
+	uint32_t i = 0;
+	for(; i < length; i++) {
+		if(!write(data[i])) {
+			return i;
+		}
+	}
+	return i;
+}
+
+bool
+{{ name }}::isWriteFinished()
+{
+	return txBuffer.isEmpty() && isTransmitReady();
+}
+
+void
+{{ name }}::flushWriteBuffer()
+{
+	while(!isWriteFinished());
+}
+
+void
+{{ name }}::setParity(Parity parity)
+{
+	Regs()->{{ prefix }}_MR = (Regs()->{{ prefix }}_MR & ~{{ prefix }}_MR{{reg_suffix}}_PAR_Msk) | (uint32_t)parity;
+}
+
+%% if type == "usart"
+void
+{{ name }}::setWordLength(WordLength length)
+{
+	if(length == WordLength::Bit9) {
+		Regs()->{{ prefix }}_MR |= {{ prefix }}_MR{{reg_suffix}}_MODE9_Msk;
+	} else {
+		Regs()->{{ prefix }}_MR &= ~{{ prefix }}_MR{{reg_suffix}}_MODE9_Msk;
+		Regs()->{{ prefix }}_MR =
+			(Regs()->{{ prefix }}_MR & ~{{ prefix }}_MR{{reg_suffix}}_CHRL_Msk)
+				| {{ prefix }}_MR{{reg_suffix}}_CHRL((uint32_t)length);
+	}
+}
+%% endif
+
+} // namespace modm::platform

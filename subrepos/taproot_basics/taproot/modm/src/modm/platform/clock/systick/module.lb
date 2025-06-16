@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2016-2018, 2020, Niklas Hauser
+# Copyright (c) 2017, Fabian Greif
+#
+# This file is part of the modm project.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+# -----------------------------------------------------------------------------
+
+import os
+
+def init(module):
+    module.name = ":platform:clock"
+    module.description = FileReader("module.md")
+
+def prepare(module, options):
+    if not options[":target"].has_driver("core:cortex-m*"):
+        return False
+
+    module.depends(
+        ":architecture:clock",
+        ":architecture:atomic",
+        ":math:algorithm",
+        ":cmsis:device")
+
+    module.add_query(
+        EnvironmentQuery(name="reference_clock", factory=systick_reference_clock))
+
+    return True
+
+def systick_reference_clock(env):
+    """
+    The SysTick can be clocked from two sources controlled by the CLKSOURCE bit:
+    1=processor clock, or 0=reference clock. Since the reference clock is
+    implementation defined, this query returns the prescaler of the reference
+    clock or 1 if it does not exist.
+
+    :returns: Divider of the processor clock.
+    """
+    target = env[":target"].identifier
+
+    # SAMD5x/E5x: Prescaler not implemented
+    if target.platform == "sam" and target.family in ["d5x/e5x", "e7x/s7x/v7x", "d1x/d2x/dax"]:
+        return 1
+    # H742/43: Prescaler not implemented in revY
+    elif target.family == "h7" and target.name in ["42", "43", "50", "53"] and target.revision == "y":
+        return 1
+    # RP2040 external reference clock need additional configuration
+    elif target.platform == "rp":
+        return 1
+    # All other STM32/SAM devices divide processor clock by 8
+    elif target.platform == "stm32" or target.platform == "sam":
+        return 8
+    # Unknown reference clock, lets be cautious and use processor clock
+    return 1
+
+def build(env):
+    target = env[":target"].identifier
+    core = env[":target"].get_driver("core")["type"]
+
+    # SysTick clock source can be processor or reference clock (=fcpu/div)
+    div = systick_reference_clock(env)
+    # Interrupt Frequency must not overflow the 2^24 SysTick->VAL!
+    # TODO: compute the systick frequency from the max operating frequency and divider
+    if "m0" in core:
+        # Only 32x32=32-bit multiplication, thus not possible to shift for ms
+        freq = 1000
+    elif target.family == "h7":
+        # Up to 550MHz
+        freq = 100
+    elif target.platform == "sam" and target.family == "d5x/e5x":
+        # Up to 120MHz, but no /8 prescaler available!
+        freq = 8
+    elif target.platform == "sam" and target.family == "e7x/s7x/v7x":
+        # Up to 300MHz
+        freq = 20
+    else:
+        freq = 4
+
+    env.substitutions = {
+        "systick_frequency": env.get(":freertos:frequency", freq),
+        "has_freertos": env.has_module(":freertos"),
+        "multicore": False,
+        "ref_clk": div
+    }
+    if env.has_module(":platform:multicore"):
+        env.substitutions["cores"] = int(target.cores)
+        env.substitutions["multicore"] = True
+    env.outbasepath = "modm/src/modm/platform/clock"
+    env.template("systick_timer.hpp.in")
+    env.template("systick_timer.cpp.in")

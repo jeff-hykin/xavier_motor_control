@@ -1,0 +1,151 @@
+/*
+ * Copyright (c) 2021, Jeff McBride
+ * Copyright (c) 2022, Christopher Durand
+ *
+ * This file is part of the modm project.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+// ----------------------------------------------------------------------------
+
+#pragma once
+
+#include "{{ type }}_base.hpp"
+#include <modm/architecture/interface/uart.hpp>
+#include <modm/math/algorithm/prescaler.hpp>
+#include <modm/platform/gpio/connector.hpp>
+#include <modm/platform/clock/clockgen.hpp>
+
+%% set name="{}{}".format(type.capitalize(), id)
+%% set reg=name.upper()
+%% if type == "usart" and target.family == "e7x/s7x/v7x" and target.variant == "b"
+%% set reg_suffix="_USART"
+%% else
+%% set reg_suffix=""
+%% endif
+
+namespace modm::platform
+{
+
+/**
+%% if type == "usart"
+ * Universal synchronous asynchronous receiver transmitter (USART{{ id }})
+%% else
+ * Universal asynchronous receiver transmitter (UART{{ id }})
+%% endif
+ *
+ * @author		Jeff McBride
+ * @author		Christopher Durand
+ * @ingroup		modm_platform_{{type}} modm_platform_{{type}}_{{id}}
+ */
+class {{ name }} : public {{ type | capitalize }}Base, public modm::Uart
+{
+private:
+	// prevent name collision between ::Uart* from SAM header with modm::Uart
+%% if type == "uart"
+	static auto* Regs() { return reinterpret_cast<::Uart*>{{ reg }}; }
+%% else
+	static auto* Regs() { return {{ reg }}; }
+%% endif
+	friend void ::{{ peripheral | upper }}{{ id }}_IRQHandler();
+public:
+	static constexpr size_t RxBufferSize = {{ options["buffer.rx"] }};
+	static constexpr size_t TxBufferSize = {{ options["buffer.tx"] }};
+
+	template< class... Pins >
+	static void
+	connect()
+	{
+		using RxPin = GetPin_t<PeripheralPin::Rx, Pins...>;
+		using TxPin = GetPin_t<PeripheralPin::Tx, Pins...>;
+		static_assert(
+			!std::is_same_v<typename RxPin::Base, typename TxPin::Base>,
+			"Rx and Tx cannot use the same pin!");
+		using Peripheral = Peripherals::{{ peripheral }}<{{ id | int }}>;
+	%% if peripheral == "Flexcom"
+		using RxConnector = typename RxPin::template Connector<Peripheral, Peripheral::Rxd>;
+		using TxConnector = typename TxPin::template Connector<Peripheral, Peripheral::Txd>;
+	%% elif type == "usart"
+		using RxConnector = typename RxPin::template Connector<Peripheral, Peripheral::Rxd<{{id}}>>;
+		using TxConnector = typename TxPin::template Connector<Peripheral, Peripheral::Txd<{{id}}>>;
+	%% elif type == "uart"
+		using RxConnector = typename RxPin::template Connector<Peripheral, Peripheral::Urxd<{{id}}>>;
+		using TxConnector = typename TxPin::template Connector<Peripheral, Peripheral::Utxd<{{id}}>>;
+	%% endif
+		RxConnector::connect();
+		TxConnector::connect();
+	}
+
+
+	template< class SystemClock, baudrate_t baudrate, percent_t tolerance=pct(1) >
+	static inline void
+	initialize(
+		Parity parity=Parity::Disabled,
+%% if type == "usart"
+		WordLength length=WordLength::Bit8,
+%% endif
+		uint8_t irq_priority = 5)
+	{
+		ClockGen::enable<ClockPeripheral::{{ peripheral }}{{ id }}>();
+
+%% if peripheral == "Flexcom"
+		FLEXCOM{{ id }}->FLEXCOM_MR = FLEXCOM_MR_OPMODE_USART;
+%% endif
+		constexpr auto result = Prescaler::from_function(
+			SystemClock::{{type | capitalize}}{{id}},
+			baudrate,
+			1,
+			65535,
+%% if type == "usart"
+			[](uint32_t x) { return x * 8; }
+%% else
+			[](uint32_t x) { return x * 16; }
+%% endif
+			);
+
+		Regs()->{{ prefix }}_BRGR = result.index;
+
+%% if type == "usart"
+		// Use 8x oversampling (this affects baud rate generation)
+		Regs()->{{ prefix }}_MR = {{ prefix }}_MR{{reg_suffix}}_OVER;
+%% endif
+
+		setParity(parity);
+%% if type == "usart"
+		setWordLength(length);
+%% endif
+		Regs()->{{ prefix }}_CR = {{ prefix }}_CR{{reg_suffix}}_RXEN_Msk | {{ prefix }}_CR{{reg_suffix}}_TXEN_Msk;
+		// Enable rx interrupt
+		Regs()->{{ prefix }}_IER = {{ prefix }}_IER{{reg_suffix}}_RXRDY_Msk;
+
+		// Enable the IRQ
+		NVIC_SetPriority({{ peripheral | upper }}{{ id }}_IRQn, irq_priority);
+		NVIC_EnableIRQ({{ peripheral | upper }}{{ id }}_IRQn);
+	}
+
+	static bool read(uint8_t &dataOut);
+
+	static std::size_t read(uint8_t *data, std::size_t length);
+
+	static bool write(uint8_t data);
+
+	static std::size_t write(const uint8_t *data, std::size_t length);
+
+	static bool isWriteFinished();
+
+	static void flushWriteBuffer();
+
+	static void setParity(Parity parity);
+
+%% if type == "usart"
+	static void setWordLength(WordLength length);
+%% endif
+
+	static inline bool isTransmitReady() { return Regs()->{{ prefix }}_{{ sr }} & {{ prefix }}_{{ sr }}{{reg_suffix}}_TXRDY_Msk; }
+
+	static inline bool isReceiveReady() { return Regs()->{{ prefix }}_{{ sr }} & {{ prefix }}_{{ sr }}{{reg_suffix}}_RXRDY_Msk; }
+};
+
+} // namespace modm::platform

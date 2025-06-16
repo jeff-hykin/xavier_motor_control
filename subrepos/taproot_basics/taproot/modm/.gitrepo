@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/uw-advanced-robotics/modm.git
+	branch = aruw-master
+	commit = 9a36b4bb423098a380168466279254cb96de9731
+	parent = d1ebabe55eaeff4b46a29cf6845c136743ee6f95
+	method = merge
+	cmdver = 0.4.5

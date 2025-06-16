@@ -1,0 +1,76 @@
+/*
+ * Copyright (c) 2020-2021, Niklas Hauser
+ * Copyright (c) 2020, Erik Henriksson
+ * Copyright (c) 2022, Christopher Durand
+ *
+ * This file is part of the modm project.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+// ----------------------------------------------------------------------------
+
+#include "../device.hpp"
+#include "gclk.hpp"
+#include <modm/math/units.hpp>
+
+// CMSIS Core compliance
+constinit uint32_t modm_fastdata SystemCoreClock(modm::platform::GenericClockController::BootFrequency);
+modm_weak void SystemCoreClockUpdate() { /* Nothing to update */ }
+
+namespace modm::platform
+{
+constinit uint16_t modm_fastdata delay_fcpu_MHz(computeDelayMhz(GenericClockController::BootFrequency));
+constinit uint16_t modm_fastdata delay_ns_per_loop(computeDelayNsPerLoop(GenericClockController::BootFrequency));
+
+%% if target.family == "d1x/d2x/dax"
+bool
+GenericClockController::configureOsc8m(Osc8mPrescaler prescaler, uint32_t waitCycles)
+{
+	SYSCTRL->OSC8M.bit.PRESC = static_cast<uint32_t>(prescaler);
+	SYSCTRL->OSC8M.bit.ONDEMAND = true;
+	SYSCTRL->OSC8M.bit.RUNSTDBY = false;
+	SYSCTRL->OSC8M.bit.ENABLE = true;
+	while (!SYSCTRL->PCLKSR.bit.OSC8MRDY && --waitCycles);
+	return waitCycles;
+}
+%% endif
+
+%% if target.family == "d1x/d2x/dax"
+/// Enable DFLL48M in open-loop mode
+bool
+GenericClockController::enableDfll48m(uint32_t waitCycles)
+{
+	// Errata 1.2.1: Disable OnDemand mode
+	SYSCTRL->DFLLCTRL.bit.ONDEMAND = 0;
+	// Wait for synchronization
+	while (!SYSCTRL->PCLKSR.bit.DFLLRDY && waitCycles > 0) --waitCycles;
+
+	// TODO: is returning the right thing to do?
+	if (waitCycles == 0)
+		return false;
+
+	// read calibration data from "NVM Software Calibration Area" (128 bits from address 0x806020)
+	// DFLL coarse value is in bits 63:58
+	const auto calibrationData = *reinterpret_cast<const volatile uint32_t*>(0x806020 + 4);
+	const auto dfllCoarseCalibration = (calibrationData >> (58 - 32)) & 0b11'1111;
+	SYSCTRL->DFLLVAL.reg = (dfllCoarseCalibration << SYSCTRL_DFLLVAL_COARSE_Pos)
+		| (512 << SYSCTRL_DFLLVAL_FINE_Pos);
+
+	// Write full configuration to DFLL control register
+	SYSCTRL->DFLLCTRL.reg = (SYSCTRL->DFLLCTRL.reg |
+		SYSCTRL_DFLLCTRL_WAITLOCK | // No output until DFLL is locked.
+		SYSCTRL_DFLLCTRL_QLDIS) // Disable quick lock
+		// Disable closed-loop and USB clock recovery mode
+		& ~(SYSCTRL_DFLLCTRL_MODE | SYSCTRL_DFLLCTRL_USBCRM);
+	while (!SYSCTRL->PCLKSR.bit.DFLLRDY);
+
+	SYSCTRL->DFLLCTRL.bit.ENABLE = true;
+	while (!SYSCTRL->PCLKSR.bit.DFLLRDY && waitCycles > 0) --waitCycles;
+
+	return waitCycles > 0;
+}
+%% endif
+
+}

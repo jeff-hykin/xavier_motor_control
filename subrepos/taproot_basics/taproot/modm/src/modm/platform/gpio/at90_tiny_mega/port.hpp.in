@@ -1,0 +1,72 @@
+/*
+ * Copyright (c) 2017-2018, Niklas Hauser
+ *
+ * This file is part of the modm project.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+// ----------------------------------------------------------------------------
+
+#pragma once
+
+#include "port_shim.hpp"
+#include "set.hpp"
+#include <modm/math/utils/bit_operation.hpp>
+
+namespace modm::platform
+{
+
+/// @ingroup modm_platform_gpio
+template< class StartGpio, int8_t Width >
+class GpioPort : public ::modm::GpioPort/** @cond */, public detail::GpioSetShim<StartGpio, Width>/** @endcond */
+{
+	using PinSet = detail::GpioSetShim<StartGpio, Width>;
+public:
+	using PinSet::width;
+	static_assert(width <= 8, "Only a maximum of 8 pins are supported by GpioPort!");
+	using PortType = uint8_t;
+
+protected:
+	using PinSet::mask;
+	using PinSet::inverted;
+	static constexpr uint8_t StartPin = Width > 0 ? StartGpio::pin : StartGpio::pin - width + 1;
+	static constexpr uint8_t StartPinReversed = (4 - StartPin - width) + 4;
+
+public:
+	static PortType isSet()
+	{
+		uint8_t r{0};
+%% for port, id in ports.items()
+		if constexpr (mask({{id}})) r = (PORT{{port}} & mask({{id}})) ^ inverted({{id}});
+%% endfor
+		if constexpr (Width < 0)
+			 return bitReverse(r) >> StartPinReversed;
+		else return            r  >> StartPin;
+	}
+
+	static PortType read()
+	{
+		uint8_t r{0};
+%% for port, id in ports.items()
+		if constexpr (mask({{id}})) r = (PIN{{port}} & mask({{id}})) ^ inverted({{id}});
+%% endfor
+		if constexpr (Width < 0)
+			 return bitReverse(r) >> StartPinReversed;
+		else return            r  >> StartPin;
+	}
+
+	static void write(PortType data)
+	{
+		uint8_t p;
+		if constexpr (Width < 0)
+			 p = bitReverse(uint8_t(data << StartPinReversed));
+		else p =            uint8_t(data << StartPin);
+%% for port, id in ports.items()
+		if constexpr (mask({{id}})) PORT{{port}} = (PORT{{port}} & ~mask({{id}})) | ((p & mask({{id}})) ^ inverted({{id}}));
+%% endfor
+	}
+};
+
+} // namespace modm::platform

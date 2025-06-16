@@ -1,0 +1,412 @@
+/*
+ * Copyright (c) 2013-2014, Kevin Läufer
+ * Copyright (c) 2014, Sascha Schade
+ * Copyright (c) 2014, 2016-2017, Niklas Hauser
+ * Copyright (c) 2023, Christopher Durand
+ *
+ * This file is part of the modm project.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+// ----------------------------------------------------------------------------
+
+#ifndef MODM_STM32F3_ADC{{ id }}_HPP
+#	error 	"Don't include this file directly, use 'adc_{{ id }}.hpp' instead!"
+#endif
+
+#include <modm/architecture/interface/delay.hpp>	// modm::delayMicroseconds
+#include <modm/platform/clock/rcc.hpp>
+
+void
+modm::platform::Adc{{ id }}::initialize(const ClockMode clk,
+%% if clock_mux
+		const ClockSource clk_src,
+%% endif
+		const Prescaler pre,
+		const CalibrationMode cal, const bool blocking)
+{
+	uint32_t tmp = 0;
+
+	// enable clock
+%% if target["family"] in ["f3", "g4", "l5", "h7"]
+	RCC->{{ ahb }}ENR |= RCC_{{ ahb }}ENR_ADC{{ id_common }}EN;
+%% elif target["family"] in ["l4"]
+	Rcc::enable<Peripheral::Adc1>();
+%% endif
+
+%% if clock_mux
+	// select clock source
+	RCC->{{ ccipr }} |= static_cast<uint32_t>(clk_src);
+%% endif
+
+%% if target["family"] in ["l4", "l5", "g4", "h7"]
+	// Disable deep power down
+	ADC{{ id }}->CR &= ~ADC_CR_DEEPPWD;
+%% endif
+
+	// reset ADC
+	// FIXME: not a good idea since you can only reset both
+	// ADC1/ADC2 or ADC3/ADC4 at once ....
+
+	// set ADC "analog" clock source
+	if (clk != ClockMode::DoNotChange) {
+		if (clk == ClockMode::Asynchronous) {
+			setPrescaler(pre);
+		}
+		tmp  =  ADC{{ id_common_u }}->CCR;
+		tmp &= ~{{ adc_ccr }}_CKMODE;
+		tmp |=  static_cast<uint32_t>(clk);
+		ADC{{ id_common_u }}->CCR = tmp;
+	}
+
+%% if resolution == 16
+	// Always set highest boost mode for maximum clock for now.
+	// This will increase the ADC power consumption on lower ADC clocks.
+	// TODO: compute ADC input clock and choose correct setting
+	ADC{{id}}->CR |= ADC_CR_BOOST_Msk;
+%% endif
+
+	// enable regulator
+	ADC{{ id }}->CR &= ~ADC_CR_ADVREGEN;
+	ADC{{ id }}->CR |= static_cast<uint32_t>(VoltageRegulatorState::Enabled);
+	modm::delay_us(10);	// FIXME: this is ugly -> find better solution
+
+%% if resolution == 16
+	while(!(ADC{{ id }}->ISR & ADC_ISR_LDORDY));
+%% endif
+
+	acknowledgeInterruptFlags(InterruptFlag::Ready);
+
+	calibrate(cal, true);	// blocking calibration
+
+	ADC{{ id }}->CR |= ADC_CR_ADEN;
+	if (blocking) {
+		// ADEN can only be set 4 ADC clock cycles after ADC_CR_ADCAL gets
+		// cleared. Setting it in a loop ensures the flag gets set for ADC
+		// clocks slower than the CPU clock.
+		while (not isReady()) {
+			ADC{{ id }}->CR |= ADC_CR_ADEN;
+		}
+		acknowledgeInterruptFlags(InterruptFlag::Ready);
+	}
+}
+
+void
+modm::platform::Adc{{ id }}::disable(const bool blocking)
+{
+	ADC{{ id }}->CR |= ADC_CR_ADDIS;
+	if (blocking) {
+		// wait for ADC_CR_ADDIS to be cleared by hw
+		while(ADC{{ id }}->CR & ADC_CR_ADDIS);
+	}
+	// disable clock
+%% if target["family"] in ["f3", "g4", "l5", "h7"]
+	RCC->{{ ahb }}ENR &= ~RCC_{{ ahb }}ENR_ADC{{ id_common }}EN;
+%% elif target["family"] in ["l4"]
+	Rcc::disable<Peripheral::Adc1>();
+%% endif
+}
+
+void
+modm::platform::Adc{{ id }}::setPrescaler(const Prescaler pre)
+{
+	uint32_t tmp;
+%% if target["family"] in ["f3"]
+	tmp  = RCC->CFGR2;
+	tmp &= ~static_cast<uint32_t>(Prescaler::Div256AllBits);
+	tmp |=  static_cast<uint32_t>(pre);
+	RCC->CFGR2 = tmp;
+%% elif target["family"] in ["l4", "l5", "g4", "h7"]
+	tmp  = ADC{{ id_common_u }}->CCR;
+	tmp &= ~static_cast<uint32_t>(Prescaler::Div256AllBits);
+	tmp |=  static_cast<uint32_t>(pre);
+	ADC{{ id_common_u }}->CCR = tmp;
+%% endif
+}
+
+bool
+modm::platform::Adc{{ id }}::isReady()
+{
+	return static_cast<bool>(getInterruptFlags() & InterruptFlag::Ready);
+}
+
+void
+modm::platform::Adc{{ id }}::calibrate(const CalibrationMode mode,
+									const bool blocking)
+{
+	if (mode != CalibrationMode::DoNotCalibrate) {
+%% if resolution == 16
+		ADC{{ id }}->CR |= ADC_CR_ADCAL | ADC_CR_ADCALLIN |
+%% else
+		ADC{{ id }}->CR |= ADC_CR_ADCAL |
+%% endif
+										static_cast<uint32_t>(mode);
+		if(blocking) {
+			// wait for ADC_CR_ADCAL to be cleared by hw
+			while(ADC{{ id }}->CR & ADC_CR_ADCAL);
+		}
+	}
+}
+
+%% if resolution < 16
+void
+modm::platform::Adc{{ id }}::setLeftAdjustResult(const bool enable)
+{
+	if (enable) {
+%% if target["family"] in ["h7"]
+		ADC{{ id }}->CFGR |= ADC3_CFGR_ALIGN;
+%% else
+		ADC{{ id }}->CFGR |= ADC_CFGR_ALIGN;
+%% endif
+	} else {
+%% if target["family"] in ["h7"]
+		ADC{{ id }}->CFGR &= ~ADC3_CFGR_ALIGN;
+%% else
+		ADC{{ id }}->CFGR &= ~ADC_CFGR_ALIGN;
+%% endif
+	}
+}
+%% endif
+
+bool
+modm::platform::Adc{{ id }}::configureChannel(Channel channel,
+											  SampleTime sampleTime)
+{
+%% if target["family"] in ["h7"] and resolution == 16:
+	if (static_cast<uint8_t>(channel) > 19) {
+		return false;
+	}
+%% else
+	if (static_cast<uint8_t>(channel) > 18) {
+		return false;
+	}
+%% endif
+
+%% if resolution == 16
+%% if target["family"] in ["h7"] and target["name"][0] in ["2", "3"]
+	ADC{{ id }}->PCSEL_RES0 |= (1u << static_cast<uint8_t>(channel));
+%% else
+	ADC{{ id }}->PCSEL |= (1u << static_cast<uint8_t>(channel));
+%% endif
+%% endif
+
+	uint32_t tmpreg = 0;
+	if (static_cast<uint8_t>(channel) < 10) {
+		tmpreg = ADC{{ id }}->SMPR1
+			& ~((ADC_SMPR1_SMP0) << (static_cast<uint8_t>(channel) * 3));
+		tmpreg |= static_cast<uint32_t>(sampleTime) <<
+						(static_cast<uint8_t>(channel) * 3);
+		ADC{{ id }}->SMPR1 = tmpreg;
+	}
+	else {
+		tmpreg = ADC{{ id }}->SMPR2
+			& ~((ADC_SMPR2_SMP10) << ((static_cast<uint8_t>(channel)-10) * 3));
+		tmpreg |= static_cast<uint32_t>(sampleTime) <<
+						((static_cast<uint8_t>(channel)-10) * 3);
+		ADC{{ id }}->SMPR2 = tmpreg;
+	}
+	return true;
+
+}
+
+bool
+modm::platform::Adc{{ id }}::setChannel(Channel channel,
+										SampleTime sampleTime)
+{
+	if (!configureChannel(channel, sampleTime)) {
+		return false;
+	}
+
+	ADC{{ id }}->SQR1 = (static_cast<uint8_t>(channel) << ADC_SQR1_SQ1_Pos) & ADC_SQR1_SQ1_Msk;
+	return true;
+}
+
+bool
+modm::platform::Adc{{ id }}::setChannelSequence(std::span<const SequenceChannel> sequence)
+{
+	if (sequence.size() > 16 || sequence.size() == 0) {
+		return false;
+	}
+
+	ADC{{ id }}->SQR1 = sequence.size() - 1;
+
+	for (const auto [i, config] : modm::enumerate(sequence)) {
+		const auto [channel, sampleTime] = config;
+		if (!configureChannel(channel, sampleTime)) {
+			return false;
+		}
+
+		if (i < 4) {
+			const auto shift = (i + 1) * 6;
+			const auto mask = 0b111111u << shift;
+			ADC{{ id }}->SQR1 = (ADC{{ id }}->SQR1 & ~mask) | (std::to_underlying(channel) << shift);
+		} else if (i < 9) {
+			const auto shift = (i - 4) * 6;
+			const auto mask = 0b111111u << shift;
+			ADC{{ id }}->SQR2 = (ADC{{ id }}->SQR2 & ~mask) | (std::to_underlying(channel) << shift);
+		} else if (i < 14) {
+			const auto shift = (i - 9) * 6;
+			const auto mask = 0b111111u << shift;
+			ADC{{ id }}->SQR3 = (ADC{{ id }}->SQR3 & ~mask) | (std::to_underlying(channel) << shift);
+		} else {
+			const auto shift = (i - 14) * 6;
+			const auto mask = 0b111111u << shift;
+			ADC{{ id }}->SQR4 = (ADC{{ id }}->SQR4 & ~mask) | (std::to_underlying(channel) << shift);
+		}
+	}
+	return true;
+}
+
+void
+modm::platform::Adc{{ id }}::setFreeRunningMode(const bool enable)
+{
+	if (enable) {
+		ADC{{ id }}->CFGR |=  ADC_CFGR_CONT; // set to continuous mode
+	} else {
+		ADC{{ id }}->CFGR &= ~ADC_CFGR_CONT; // set to single mode
+	}
+}
+
+void
+modm::platform::Adc{{ id }}::startConversion()
+{
+	// TODO: maybe add more interrupt flags
+	acknowledgeInterruptFlags(InterruptFlag::EndOfRegularConversion |
+			InterruptFlag::EndOfSampling | InterruptFlag::Overrun |
+			InterruptFlag::EndOfRegularSequenceOfConversions);
+	// starts single conversion for the regular group
+	ADC{{ id }}->CR |= ADC_CR_ADSTART;
+}
+
+void
+modm::platform::Adc{{ id }}::stopConversion()
+{
+	ADC{{ id }}->CR |= ADC_CR_ADSTP | ADC_CR_JADSTP;
+	while ((ADC{{ id }}->CR & (ADC_CR_ADSTP | ADC_CR_JADSTP)) != 0);
+
+	acknowledgeInterruptFlags(InterruptFlag::EndOfRegularConversion |
+			InterruptFlag::EndOfSampling | InterruptFlag::Overrun);
+}
+
+bool
+modm::platform::Adc{{ id }}::isConversionFinished()
+{
+	return static_cast<bool>(getInterruptFlags() & InterruptFlag::EndOfRegularConversion);
+}
+
+bool
+modm::platform::Adc{{ id }}::isConversionSequenceFinished()
+{
+	return static_cast<bool>(getInterruptFlags() & InterruptFlag::EndOfRegularSequenceOfConversions);
+}
+
+void
+modm::platform::Adc{{ id }}::startInjectedConversionSequence()
+{
+	acknowledgeInterruptFlags(InterruptFlag::EndOfInjectedConversion |
+			InterruptFlag::EndOfInjectedSequenceOfConversions);
+
+	ADC{{ id }}->CR |= ADC_CR_JADSTART;
+}
+
+bool
+modm::platform::Adc{{ id }}::setInjectedConversionChannel(uint8_t index, Channel channel,
+														  SampleTime sampleTime)
+{
+	if (index >= 4) {
+		return false;
+	}
+	if (!configureChannel(channel, sampleTime)) {
+		return false;
+	}
+
+	static_assert(ADC_JSQR_JSQ2_Pos == ADC_JSQR_JSQ1_Pos + 6);
+	static_assert(ADC_JSQR_JSQ3_Pos == ADC_JSQR_JSQ2_Pos + 6);
+	static_assert(ADC_JSQR_JSQ4_Pos == ADC_JSQR_JSQ3_Pos + 6);
+
+	const uint32_t pos = ADC_JSQR_JSQ1_Pos + 6 * index;
+	const uint32_t mask = ADC_JSQR_JSQ1_Msk << (6 * index);
+	ADC{{ id }}->JSQR = (ADC{{ id }}->JSQR & ~mask) | (static_cast<uint32_t>(channel) << pos);
+	return true;
+}
+
+template<class Gpio>
+bool
+modm::platform::Adc{{ id }}::setInjectedConversionChannel(uint8_t index,
+														  SampleTime sampleTime)
+{
+	return setInjectedConversionChannel(index, getPinChannel<Gpio>(), sampleTime);
+}
+
+bool
+modm::platform::Adc{{ id }}::setInjectedConversionSequenceLength(uint8_t length)
+{
+	if (length < 1 or length > 4) {
+		return false;
+	}
+	ADC{{ id }}->JSQR = (ADC{{ id }}->JSQR & ~ADC_JSQR_JL)
+		| ((length - 1) << ADC_JSQR_JL_Pos);
+	return true;
+}
+
+bool
+modm::platform::Adc{{ id }}::isInjectedConversionFinished()
+{
+	return static_cast<bool>(getInterruptFlags() & InterruptFlag::EndOfInjectedSequenceOfConversions);
+}
+
+void
+modm::platform::Adc{{ id }}::setDmaMode(DmaMode mode)
+{
+	constexpr uint32_t mask = std::to_underlying(DmaMode::Mask);
+	ADC{{ id }}->CFGR = (ADC{{ id }}->CFGR & ~mask) | std::to_underlying(mode);
+}
+
+// ----------------------------------------------------------------------------
+void
+modm::platform::Adc{{ id }}::enableInterruptVector(const uint32_t priority,
+												const bool enable)
+{
+%% if id <= 2 and target["family"] in ["h7"]
+	const IRQn_Type INTERRUPT_VECTOR = ADC_IRQn;
+%% elif id <= 2 and target["family"] not in ["h7"]
+	const IRQn_Type INTERRUPT_VECTOR = ADC1_2_IRQn;
+%% elif id <= 5
+	const IRQn_Type INTERRUPT_VECTOR = ADC{{ id }}_IRQn;
+%% endif
+
+	if (enable) {
+		NVIC_SetPriority(INTERRUPT_VECTOR, priority);
+		NVIC_EnableIRQ(INTERRUPT_VECTOR);
+	} else {
+		NVIC_DisableIRQ(INTERRUPT_VECTOR);
+	}
+}
+
+void
+modm::platform::Adc{{ id }}::enableInterrupt(const Interrupt_t interrupt)
+{
+	ADC{{ id }}->IER |= interrupt.value;
+}
+
+void
+modm::platform::Adc{{ id }}::disableInterrupt(const Interrupt_t interrupt)
+{
+	ADC{{ id }}->IER &= ~interrupt.value;
+}
+
+modm::platform::Adc{{ id }}::InterruptFlag_t
+modm::platform::Adc{{ id }}::getInterruptFlags()
+{
+	return InterruptFlag_t(ADC{{ id }}->ISR);
+}
+
+void
+modm::platform::Adc{{ id }}::acknowledgeInterruptFlags(const InterruptFlag_t flags)
+{
+	// Flags are cleared by writing a one to the flag position.
+	// Writing a zero is ignored.
+	ADC{{ id }}->ISR = flags.value;
+}

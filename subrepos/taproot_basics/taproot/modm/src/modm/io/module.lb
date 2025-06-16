@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2016-2018, Niklas Hauser
+# Copyright (c) 2017, Fabian Greif
+#
+# This file is part of the modm project.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+# -----------------------------------------------------------------------------
+
+def init(module):
+    module.name = ":io"
+    module.description = FileReader("module.md")
+
+def prepare(module, options):
+    module.depends(
+        ":architecture:accessor",
+        ":math:utils")
+
+    is_avr = options[":target"].identifier.platform in ["avr"]
+    if not is_avr: module.depends(":printf")
+    module.add_option(
+            BooleanOption(name="with_long_long",
+                          description="Support for 64-bit integer formatting",
+                          default=not is_avr,
+                          dependencies=lambda o: ":printf" if o else None))
+    module.add_option(
+            BooleanOption(name="with_float",
+                          description=descr_with_float,
+                          default=not is_avr))
+    module.add_option(
+            BooleanOption(name="with_printf",
+                          description="Support for printf-style formatting",
+                          default=not is_avr,
+                          dependencies=lambda o: ":printf" if o else None))
+
+    return True
+
+def build(env):
+    core = env[":target"].get_driver("core")["type"]
+    not_avr = not core.startswith("avr")
+    env.substitutions = {
+        "family": env[":target"].identifier.family,
+        "core": core,
+        "using_printf": env.has_module(":printf"),
+    }
+    env.outbasepath = "modm/src/modm/io"
+    env.copy(".", ignore=env.ignore_files("io.hpp", "iostream_printf.cpp.in", "iostream.hpp.in"))
+    env.template("iostream_printf.cpp.in")
+    env.template("iostream.hpp.in")
+
+    env.outbasepath = "modm/src/modm"
+    env.copy("io.hpp")
+
+
+descr_with_float = """# Support for floating point formatting
+
+On AVRs floating point values can be printed, however, the formatting cannot be
+specified and all values are printed as *scientific-notation exponential floating point*
+"""

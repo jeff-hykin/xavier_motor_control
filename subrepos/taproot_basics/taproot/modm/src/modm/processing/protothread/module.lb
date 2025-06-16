@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2016-2018, Niklas Hauser
+# Copyright (c) 2017-2018, Fabian Greif
+#
+# This file is part of the modm project.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+# -----------------------------------------------------------------------------
+
+def init(module):
+    module.name = ":processing:protothread"
+    module.description = FileReader("module.md")
+
+def prepare(module, options):
+    module.depends(":architecture")
+    module.add_option(
+        BooleanOption(
+            name="use_fiber",
+            default=False,
+            description="Implement via Fibers",
+            dependencies=lambda v: ":processing:fiber" if v else None))
+
+    return True
+
+def build(env):
+    env.outbasepath = "modm/src/modm/processing/protothread"
+    if env["use_fiber"]:
+        env.copy("macros_fiber.hpp", "macros.hpp")
+        env.copy("protothread_fiber.hpp", "protothread.hpp")
+    else:
+        env.copy("macros.hpp")
+        env.copy("protothread.hpp")
+    env.copy("semaphore.hpp")
+    env.copy("../protothread.hpp")

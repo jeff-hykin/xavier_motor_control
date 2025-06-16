@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2019, Niklas Hauser
+#
+# This file is part of the modm project.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+# -----------------------------------------------------------------------------
+
+def init(module):
+    module.name = ":crashcatcher"
+    module.description = """
+# CrashCatcher
+
+CrashCatcher hooks into the ARM Cortex-M HardFault handler and generates a coredump
+that can be used with CrashDebug for post-mortem debugging.
+You must place the `CrashDebug` binary in your path or alternatively set the
+environment variable `MODM_CRASHDEBUG_BINARY` to point to the enclosing folder:
+
+```sh
+export MODM_CRASHDEBUG_BINARY=/path/to/crashdebug/bin/CrashDebug
+```
+
+- https://github.com/adamgreen/CrashCatcher
+- https://github.com/adamgreen/CrashDebug
+
+!!! tip "The debugger can generate coredumps too"
+    In case you encounter a hardfault while debugging or you simply want to
+    store the current system state for later analysis or to share with other
+    developers, you can simply call the `modm_coredump` function in GDB and it
+    will generate a `coredump.txt` file. Consult your chosen build system module
+    for additional integration.
+"""
+
+def prepare(module, options):
+    if not options[":target"].has_driver("core:cortex-m*"):
+        return False
+    return True
+
+def build(env):
+    core = env[":target"].get_driver("core")["type"]
+
+    env.collect(":build:path.include", "modm/ext/crashcatcher/include")
+    env.outbasepath = "modm/ext/crashcatcher"
+
+    env.copy("crashcatcher/CrashCatcher/include/CrashCatcher.h", "include/CrashCatcher.h")
+    env.copy("crashcatcher/CrashCatcher/Core/src", "src", ignore=env.ignore_files("*.S"))
+    version = "armv{}m".format("6" if "m0" in core else "7")
+    env.copy("crashcatcher/CrashCatcher/Core/src/CrashCatcher_{}.S".format(version),
+             "src/CrashCatcher_{}.sx".format(version))

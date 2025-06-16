@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2019-2021 Niklas Hauser
+#
+# This file is part of the modm project.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+# -----------------------------------------------------------------------------
+
+import math
+
+def init(module):
+    module.name = ":platform:core"
+    module.description = FileReader("module.md")
+
+
+def prepare(module, options):
+    if options[":target"].identifier.platform != "stm32":
+        return False
+
+    if options[":target"].get_driver("core")["type"] == "cortex-m0":
+        module.add_option(
+            EnumerationOption(
+                name="vector_table_location",
+                description=FileReader("option/vector_table_location.md"),
+                enumeration=["rom", "ram"],
+                default="rom")
+            )
+
+    if options[":target"].identifier.family == "h7":
+        module.add_option(
+            EnumerationOption(
+                name="main_stack_location",
+                description="SRAM (default) or DTCM (faster, but not DMA-capable)",
+                enumeration=["sram", "dtcm"],
+                default="sram")
+            )
+
+    module.depends(":platform:cortex-m")
+    return True
+
+
+def build(env):
+    target = env[":target"].identifier
+    env.substitutions = {
+        "target": target,
+        "vector_table_location": env.get(":platform:core:vector_table_location", "rom")
+    }
+    env.outbasepath = "modm/src/modm/platform/core"
+    # startup helper code
+    env.template("startup_platform.c.in")
+
+    # delay code that must be tuned for each family
+    # (cycles per loop, setup cost in loops)
+    tuning = {
+        "g4": (3,  4), # CM4  tested on G476 in RAM
+        "l0": (3,  4), # CM0+ tested on L031 in RAM
+        "g0": (3,  4), # CM0+ tested on G072 in RAM
+        "f7": (4,  4), # CM7  tested on F767 in ITCM
+        "h7": (4,  4), # CM7  tested on H743 in ITCM
+        "l4": (3,  4), # CM4  tested on L476 in SRAM2
+        "l5": (3,  4), # CM33 tested on L552 in RAM
+        "u5": (3,  4), # CM33 tested on U575 in RAM
+        "f3": (3,  4), # CM4  tested on F334, F303 in CCM RAM
+
+        # Defaults of (4, 4) for these families:
+        "l1": (4,  4), # CM3  tested on L152 in RAM
+        "f0": (4,  4), # CM3  tested on F071 in RAM
+        "f1": (4,  4), # CM3  tested on F103 in RAM
+        "f4": (4,  4), # CM4  tested on F401, F411, F446 in RAM
+        "f2": (4,  4), # CM3  guessed based on documentation
+    }[target.family]
+
+    # us_shift is an optimization to limit error via fractional math
+    frequency = int(env[":target"].get_driver("rcc")["max-frequency"][0])
+    us_shift = 32 - math.ceil(math.log2(frequency))
+
+    env.substitutions.update({
+        "with_cm0": env[":target"].has_driver("core:cortex-m0*"),
+        "with_cm7": env[":target"].has_driver("core:cortex-m7*"),
+        "loop": tuning[0],
+        "shift": int(math.log2(tuning[1])),
+        "us_shift": us_shift,
+        "with_assert": env.has_module(":architecture:assert")
+    })
+    env.template("../cortex/delay_ns.cpp.in", "delay_ns.cpp")
+    env.template("../cortex/delay_ns.hpp.in", "delay_ns.hpp")
+    env.template("../cortex/delay_impl.hpp.in", "delay_impl.hpp")
+
+
+def post_build(env):
+    env.substitutions = env.query("::cortex-m:linkerscript")
+    env.substitutions.update(env.query("::cortex-m:vector_table"))
+    env.outbasepath = "modm/link"
+
+    linkerscript = "../cortex/ram.ld.in"
+    if env.get(":platform:core:vector_table_location", "rom") == "ram":
+        linkerscript = "ram_remap_vector_table.ld.in"
+    for memory in env.substitutions["memories"]:
+        if memory["name"] == "ccm":
+            if "x" in memory["access"]:
+                # Executable CCM (Instruction Core-Coupled Memory)
+                linkerscript = "iccm.ld.in"
+            else:
+                # Non-executable CCM (Data Core-Coupled Memory)
+                linkerscript = "dccm.ld.in"
+        elif memory["name"] == "dtcm":
+            # Executable ITCM and DTCM (Tightly-Coupled Memory)
+            env.substitutions["stack_in_dtcm"] = env.get(":platform:core:main_stack_location", "dtcm") == "dtcm"
+            linkerscript = "idtcm.ld.in"
+    env.template(linkerscript, "linkerscript.ld")

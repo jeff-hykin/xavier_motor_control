@@ -1,0 +1,9 @@
+define reset
+%% if probe == "openocd"
+  mon reset halt
+%% elif probe == "jlink"
+  mon reset
+%% elif probe == "bmp"
+  start
+%% endif
+end

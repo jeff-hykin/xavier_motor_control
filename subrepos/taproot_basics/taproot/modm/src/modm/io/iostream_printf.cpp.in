@@ -1,0 +1,171 @@
+/*
+ * Copyright (c) 2019, Niklas Hauser
+ *
+ * This file is part of the modm project.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+// ----------------------------------------------------------------------------
+
+%% if family in ["windows"]
+#define _vsnprintf _vsnprintf_windows
+%% endif
+#include <stdio.h>
+%% if family in ["windows"]
+#undef _vsnprintf
+%% endif
+
+#include <stdarg.h>
+#include <modm/architecture/interface/accessor.hpp>
+#include <cmath>
+#include "iostream.hpp"
+
+%% if using_printf
+#include <printf/printf.h>
+#include <printf/printf_config.h>
+
+extern "C"
+{
+#if PRINTF_SUPPORT_LONG_LONG
+typedef unsigned long long printf_unsigned_value_t;
+#else
+typedef unsigned long printf_unsigned_value_t;
+#endif
+
+#define FLAGS_SHORT		(1U <<  7U)
+#define FLAGS_LONG		(1U <<  9U)
+#define FLAGS_LONG_LONG	(1U << 10U)
+
+extern
+void print_integer(printf_output_gadget_t* output, printf_unsigned_value_t value,
+				   bool negative, uint8_t base, unsigned int precision,
+				   unsigned int width, unsigned int flags);
+%% if options.with_float
+extern
+void print_floating_point(printf_output_gadget_t* output, double value,
+                          unsigned int precision, unsigned int width,
+                          unsigned int flags, bool prefer_exponential);
+%% endif
+}
+%% endif
+
+namespace modm
+{
+
+%% if options.with_printf
+IOStream&
+IOStream::printf(const char *fmt, ...)
+{
+	va_list va;
+	va_start(va, fmt);
+	this->vprintf(fmt, va);
+	va_end(va);
+	return *this;
+}
+
+IOStream&
+IOStream::vprintf(const char *fmt, va_list ap)
+{
+	vfctprintf(&out_char, this, fmt, ap);
+	return *this;
+}
+%% endif
+
+void
+IOStream::writeInteger(int16_t value)
+{
+%% if using_printf
+	print_integer(&output_gadget, uint16_t(value < 0 ? -value : value),
+	              value < 0, 10, 0, 0, FLAGS_SHORT);
+%% else
+	// hard coded for -32'768
+	char str[7 + 1]; // +1 for '\0'
+	itoa(value, str, 10);
+	device->write(str);
+%% endif
+}
+
+void
+IOStream::writeInteger(uint16_t value)
+{
+%% if using_printf
+	print_integer(&output_gadget, value, false, 10, 0, 0, FLAGS_SHORT);
+%% else
+	// hard coded for 32'768
+	char str[6 + 1]; // +1 for '\0'
+	utoa(value, str, 10);
+	device->write(str);
+%% endif
+}
+
+void
+IOStream::writeInteger(int32_t value)
+{
+%% if using_printf
+	print_integer(&output_gadget, uint32_t(value < 0 ? -value : value),
+	              value < 0, 10, 0, 0, FLAGS_LONG);
+%% else
+	// hard coded for -2147483648
+	char str[11 + 1]; // +1 for '\0'
+	ltoa(value, str, 10);
+	device->write(str);
+%% endif
+}
+
+void
+IOStream::writeInteger(uint32_t value)
+{
+%% if using_printf
+	print_integer(&output_gadget, value, false, 10, 0, 0, FLAGS_LONG);
+%% else
+	// hard coded for 4294967295
+	char str[10 + 1]; // +1 for '\0'
+	ultoa(value, str, 10);
+	device->write(str);
+%% endif
+}
+
+%% if options.with_long_long
+void
+IOStream::writeInteger(int64_t value)
+{
+	print_integer(&output_gadget, uint64_t(value < 0 ? -value : value),
+	              value < 0, 10, 0, 0, FLAGS_LONG_LONG);
+}
+
+void
+IOStream::writeInteger(uint64_t value)
+{
+	print_integer(&output_gadget, value, false, 10, 0, 0, FLAGS_LONG_LONG);
+}
+%% endif
+
+%% if options.with_float
+void
+IOStream::writeDouble(const double& value)
+{
+%% if using_printf
+	print_floating_point(&output_gadget, value, 0, 0, 0, true);
+%% else
+	if(!std::isfinite(value)) {
+		if(std::isinf(value)) {
+			if (value < 0) device->write('-');
+			*this << IFSS("inf");
+		}
+		else {
+			*this << IFSS("nan");
+		}
+	}
+	else {
+		// hard coded for -2.22507e-308
+		char str[13 + 1]; // +1 for '\0'
+		dtostre(value, str, 5, 0);
+		device->write(str);
+	}
+%% endif
+}
+%% endif
+
+} // namespace modm
