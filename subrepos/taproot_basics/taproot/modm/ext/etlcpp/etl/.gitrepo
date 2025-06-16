@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/modm-ext/etl-partial.git
+	branch = main
+	commit = 27f0fcffb5b2edad1034f419762fba958690c151
+	parent = a58e5406af976aefba19d1505f0609344d795fc7
+	method = merge
+	cmdver = 0.4.5
