@@ -28,6 +28,7 @@ if True:
     prev_angle = 720
     def set_angle(angle):
         global prev_angle
+        print(f'''(angle - prev_angle) = {(angle - prev_angle)}''')
         # not a big enough change
         if abs((angle - prev_angle) % 360) < 20:
             print(f'''overshooting to {angle+20}''')
