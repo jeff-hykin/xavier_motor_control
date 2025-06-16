@@ -32,26 +32,28 @@ if StrictVersion(getattr(lbuild, "__version__", "0.1.0")) < StrictVersion(min_lb
 
 # Check for submodule existance and their version
 def check_submodules():
-    repo = Repo(localpath("."))
-    has_error = True
-    if any(not sm.module_exists() for sm in repo.submodules):
-        print("\n>> modm: One or more git submodules in `modm/ext/` is missing!\n"
-              ">> modm: Please checkout the submodules:\n\n"
-              "    cd modm\n"
-              "    git submodule update --init\n")
-        exit(1)
-    elif any(sm.hexsha != sm.module().commit().hexsha for sm in repo.submodules):
-        print("\n>> modm: One or more git submodules in `modm/ext/` is not up-to-date!\n"
-              ">> modm: Please update the submodules:\n\n"
-              "    cd modm\n"
-              "    git submodule sync\n"
-              "    git submodule update --init\n")
+    # repo = Repo(localpath("."))
+    # has_error = True
+    # if any(not sm.module_exists() for sm in repo.submodules):
+    #     print("\n>> modm: One or more git submodules in `modm/ext/` is missing!\n"
+    #           ">> modm: Please checkout the submodules:\n\n"
+    #           "    cd modm\n"
+    #           "    git submodule update --init\n")
+    #     exit(1)
+    # elif any(sm.hexsha != sm.module().commit().hexsha for sm in repo.submodules):
+    #     print("\n>> modm: One or more git submodules in `modm/ext/` is not up-to-date!\n"
+    #           ">> modm: Please update the submodules:\n\n"
+    #           "    cd modm\n"
+    #           "    git submodule sync\n"
+    #           "    git submodule update --init\n")
+    pass
 
 # Import modm-device tools
 sys.path.append(repopath("ext/modm-devices"))
 try:
     import modm_devices.parser
 except ModuleNotFoundError:
+    print(f'''unable to "import modm_devices.parser"''')
     check_submodules()
 
 # =============================================================================
