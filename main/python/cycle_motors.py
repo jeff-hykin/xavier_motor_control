@@ -21,22 +21,15 @@ def angle_to_pulse_with(angle):
     return ((angle % 360/360)*1000)+1000
 
 try:
+    angle = 0
+    change_amount = 10
     while True:
-        pwm.start(0)
-        time.sleep(1)
+        if angle + change_angle > 360 or angle + change_angle < 0:
+            change_amount = -change_amount
         
-        set_pulse_width(angle_to_pulse_with(0))
+        angle += change_amount
+        set_pulse_width(angle_to_pulse_with(angle))
         time.sleep(1)
-        
-        set_pulse_width(angle_to_pulse_with(180))
-        time.sleep(1)
-        
-        set_pulse_width(angle_to_pulse_with(270))
-        time.sleep(1)
-        
-        set_pulse_width(angle_to_pulse_with(360))
-        time.sleep(1)
-        
 finally:
     pwm.stop()
     GPIO.cleanup()
