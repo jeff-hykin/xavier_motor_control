@@ -142,6 +142,18 @@
     package: [ "pkgsCross", "armv7l-hf-multiplatform", "gcc",]
     asBuildInput: true
 
+- (integrate):
+    package: [ "python311"]
+    asBuildInput: true
+
+- (integrate):
+    package: ["scons"]
+    asBuildInput: true
+
+- (integrate):
+    package: [ "python311", "pyelftools"]
+    asBuildInput: true
+
 # 
 # example of including a linux-specific system package
 # 
