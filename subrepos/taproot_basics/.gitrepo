@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://gitlab.com/aruw/controls/taproot-template-project
+	branch = develop
+	commit = 5cdf29d6a4e8f5ec1c9b0ad587aeebbf31aa67c4
+	parent = b3e21ba72e77211db14426dc459a436d3fb69815
+	method = merge
+	cmdver = 0.4.5
