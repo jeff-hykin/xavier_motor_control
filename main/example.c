@@ -17,8 +17,7 @@ int main(int argc, char *argv[]) {
         /* jetgpio initialisation failed */
         printf("Jetgpio initialisation failed. Error code:  %d\n", Init);
         exit(Init);
-    }
-    else {
+    } else {
         /* jetgpio initialised okay*/
         printf("Jetgpio initialisation OK. Return code:  %d\n", Init);
     }	
@@ -31,8 +30,7 @@ int main(int argc, char *argv[]) {
         /* PWM frequency set up failed */
         printf("PWM frequency set up failed. Error code:  %d\n", PWMstat);
         exit(Init);
-    }
-    else {
+    } else {
         /* PWM frequency set up okay*/
         printf("PWM frequency set up okay at pin 32. Return code:  %d\n", PWMstat);
     }
@@ -44,8 +42,7 @@ int main(int argc, char *argv[]) {
         /* PWM start on failed */
         printf("PWM start failed. Error code:  %d\n", PWMstat2);
         exit(Init);
-    }
-    else {
+    } else {
         /* PWM started on okay*/
         printf("PWM started up okay at pin 32. Return code:  %d\n", PWMstat2);
     }
