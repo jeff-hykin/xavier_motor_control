@@ -1,20 +1,18 @@
-import { FileSystem, glob } from "https://deno.land/x/quickr@0.6.72/main/file_system.js"
-import { run, throwIfFails, zipInto, mergeInto, returnAsString, Timeout, Env, Cwd, Stdin, Stdout, Stderr, Out, Overwrite, AppendTo } from "https://deno.land/x/quickr@0.6.72/main/run.js"
-import { Console, black, white, red, green, blue, yellow, cyan, magenta, lightBlack, lightWhite, lightRed, lightGreen, lightBlue, lightYellow, lightMagenta, lightCyan, blackBackground, whiteBackground, redBackground, greenBackground, blueBackground, yellowBackground, magentaBackground, cyanBackground, lightBlackBackground, lightRedBackground, lightGreenBackground, lightYellowBackground, lightBlueBackground, lightMagentaBackground, lightCyanBackground, lightWhiteBackground, bold, reset, dim, italic, underline, inverse, strikethrough, gray, grey, lightGray, lightGrey, grayBackground, greyBackground, lightGrayBackground, lightGreyBackground, } from "https://deno.land/x/quickr@0.6.72/main/console.js"
+import { FileSystem, glob } from "https://deno.land/x/quickr@0.8.1/main/file_system.js"
+import { Console, black, white, red, green, blue, yellow, cyan, magenta, lightBlack, lightWhite, lightRed, lightGreen, lightBlue, lightYellow, lightMagenta, lightCyan, blackBackground, whiteBackground, redBackground, greenBackground, blueBackground, yellowBackground, magentaBackground, cyanBackground, lightBlackBackground, lightRedBackground, lightGreenBackground, lightYellowBackground, lightBlueBackground, lightMagentaBackground, lightCyanBackground, lightWhiteBackground, bold, reset, dim, italic, underline, inverse, strikethrough, gray, grey, lightGray, lightGrey, grayBackground, greyBackground, lightGrayBackground, lightGreyBackground, } from "https://deno.land/x/quickr@0.8.1/main/console.js"
 import { indent, findAll, escapeRegexMatch, escapeRegexReplace, } from "https://deno.land/x/good@0.7.18/string.js"
-import { recursivelyAllKeysOf, get, set, remove, merge, compareProperty } from "https://deno.land/x/good@0.7.18/object.js"
-import { intersection, subtract } from "https://deno.land/x/good@0.7.18/set.js"
-import { stats, sum, spread, normalizeZeroToOne, roundedUpToNearest, roundedDownToNearest } from "https://deno.land/x/good@0.7.18/math.js"
-import { zip } from "https://deno.land/x/good@0.7.18/array.js"
 import { hashers } from "https://deno.land/x/good@0.7.18/encryption.js"
 import { move as moveAndRename } from "https://deno.land/std@0.133.0/fs/mod.ts"
 import { Type } from "https://deno.land/std@0.82.0/encoding/_yaml/type.ts"
 import * as yaml from "https://deno.land/std@0.82.0/encoding/yaml.ts"
-import * as Path from "https://deno.land/std@0.128.0/path/mod.ts"
-import { nix } from "./specific_tools/nix_tools.js"
+// import { nix } from "./specific_tools/nix_tools.js"
 import { numberPrefixRenameList } from "./specific_tools/number_prefix_rename_list.js"
 import { readExtendedYaml, parsePackageTools, systemToolsToNix } from "./specific_tools/read_extended_yaml.js"
-
+import $ from "https://esm.sh/@jsr/david__dax@0.43.2/mod.ts"
+const $$ = (...args)=>$(...args).noThrow()
+// await $$`false`
+// await $$`false`.text("stderr")
+const denoFlags = `--allow-all --no-lock --quiet`
 const posixShellEscape = (string)=>"'"+string.replace(/'/g, `'"'"'`)+"'"
 
 // 
@@ -126,7 +124,7 @@ export const createVirkshop = async (arg)=>{
                     if (shellPath) {
                         let shell = FileSystem.basename(shellPath)
                         if (shell == "bash" || shell == "zsh" || shell == "dash" || shell == "ash" || shell == "sh") {
-                            const path = await run(shellPath, "-c", `command -v ${posixShellEscape(commandName)}`, Stdout(returnAsString))
+                            const path = await $$`${shellPath} -c ${`command -v ${posixShellEscape(commandName)}`}`.text("stdout")
                             if (path.length == 0) {
                                 return null
                             }
@@ -135,7 +133,7 @@ export const createVirkshop = async (arg)=>{
                     }
                     
                     // if user has a more complicated runtime, fallback on sh and hope that its posix
-                    const path = await run("sh", "-c", `command -v ${posixShellEscape(commandName)}`, Stdout(returnAsString))
+                    const path = await $$`sh -c ${`command -v ${posixShellEscape(commandName)}`}`.text("stdout")
                     if (path.length == 0) {
                         return null
                     }
@@ -457,7 +455,7 @@ export const createVirkshop = async (arg)=>{
                                     // FIXME: check that the command doesn't already exist
                                     path: executablePath,
                                     data: [
-                                        `#!/usr/bin/env -S ${posixShellEscape(absolutePathToDeno)} run --no-lock -q --allow-all`,
+                                        `#!/usr/bin/env -S ${posixShellEscape(absolutePathToDeno)} run ${denoFlags}`,
                                         `// NOTE: this file was auto-generated by: ${JSON.stringify(relativePluginPath)}`,
                                         `//       edit that file, not this one!`,
                                         `import { virkshop } from ${JSON.stringify(FileSystem.makeRelativePath({ from: virkshop.pathTo.commands, to: thisFile }))}`,
@@ -531,10 +529,9 @@ export const createVirkshop = async (arg)=>{
                                             shellApi.callCommand(
                                                 Deno.execPath(),
                                                 "eval",
-                                                "--no-lock",
-                                                "-q",
+                                                ...denoFlags.split(" "),
                                                 `
-                                                    import { FileSystem } from "https://deno.land/x/quickr@0.6.64/main/file_system.js"
+                                                    import { FileSystem } from "https://deno.land/x/quickr@0.8.1/main/file_system.js"
                                                     const [ virkshopFile, tempShellOutputPath, pluginPath ] = Deno.args
                                                     const { virkshop, shellApi } = await import(virkshopFile)
                                                     const { pluginOutput } = await virkshop._internal.importPlugin(pluginPath)
@@ -570,7 +567,7 @@ export const createVirkshop = async (arg)=>{
                                         await FileSystem.write({
                                             path: eventPath,
                                             data: [
-                                                `#!/usr/bin/env -S ${posixShellEscape(absolutePathToDeno)} run --no-lock -q --allow-all`,
+                                                `#!/usr/bin/env -S ${posixShellEscape(absolutePathToDeno)} run ${denoFlags}`,
                                                 `// NOTE: this file was auto-generated by: ${JSON.stringify(relativePluginPath)}`,
                                                 `//       edit that file, not this one!`,
                                                 `import { virkshop } from ${JSON.stringify(FileSystem.makeRelativePath({ from: virkshop.pathTo.commands, to: thisFile }))}`,
@@ -697,7 +694,7 @@ export const createVirkshop = async (arg)=>{
                                         } else {
                                             (debuggingLevel >= 2) && console.log(`    [Running ${eachItem.path}]`)
                                             await FileSystem.addPermissions({ path: eachItem.path, permissions: { owner: {canExecute: true} }})
-                                            await run`${eachItem.path}`
+                                            await $$`${eachItem.path}`
                                         }
                                     } catch (error) {
                                         console.warn(`\n\nWARNING: error while executing ${eachItem.path}, ${error.stack}`,)
@@ -723,7 +720,7 @@ export const createVirkshop = async (arg)=>{
                                 virkshop._internal.shellSetupPriorities.push(
                                     [
                                         eachPath.slice(parentFolderString.length),
-                                        `deno run -q -A --no-lock ${shellApi.escapeShellArgument(eachPath)}`,
+                                        `deno run ${denoFlags} ${shellApi.escapeShellArgument(eachPath)}`,
                                     ]
                                 )
                             } else if (eachPath.match(/\.zsh$/)) {
@@ -837,7 +834,7 @@ export const createVirkshop = async (arg)=>{
                                         // run the executable, and use the output as a file
                                         await FileSystem.write({
                                             path: homePathTarget,
-                                            data: await run`${item.path} ${Stdout(returnAsString)}`,
+                                            data: await $$`${item.path}`.text("stdout"),
                                         })
                                     }
                                 },
@@ -1046,9 +1043,9 @@ export const createVirkshop = async (arg)=>{
                         COMMAND_MODE: "unix2003",
                         LANG: "en_US.UTF-8", // TODO: put this in settings
                     }
-                    await run(
+                    const args = [
                         "nix-shell",
-                        ...(debuggingLevel > 0 ? [ `-${"v".repeat(Math.min(debuggingLevel-1,5))}` ] : []),
+                        ...(debuggingLevel > 0 ? [ `-${"v".repeat(Math.min(debuggingLevel,5))}` ] : []),
                         "--pure",
                         "--command", shellApi.startCommand,
                         ...Object.keys(envVars).map(
@@ -1056,9 +1053,11 @@ export const createVirkshop = async (arg)=>{
                         ).flat(),
                         `${virkshop.pathTo._tempNixShellFile}`,
                         "-I", `nixpkgs=${defaultWarehouse.tarFileUrl}`,
-                        Cwd(newPwd),
-                        Env(envVars),
-                    )
+                    ]
+                    if (debuggingLevel > 3) {
+                        console.debug(`calling nix-shell with args:`,args)
+                    }
+                    await $$`${args}`.env(envVars).cwd(newPwd)
                     // TODO: call all the on_quit scripts
                 },
             },
@@ -1072,7 +1071,7 @@ export const createVirkshop = async (arg)=>{
                 for await (const eachPath of FileSystem.recursivelyIteratePathsIn(fullPathToEvent, { searchOrder: 'depthFirstSearch', })) {
                     const uniquePath = await FileSystem.finalTargetOf(eachPath)
                     if (!alreadExecuted.has(uniquePath)) {
-                        var success = true
+                        var failed = false
                         try {
                             // if deno, then import it (much faster than executing it)
                             if (eachPath.endsWith(".deno.js")) {
@@ -1084,13 +1083,13 @@ export const createVirkshop = async (arg)=>{
                                      path: eachPath, 
                                      permissions: { owner: { canExecute: true} },
                                 })
-                                var { success } = await run(eachPath)
+                                var { code: failed } = await $$`${eachPath}`
                             }
                             alreadExecuted.add(eachPath)
                         } catch (error) {
                             console.warn(`    Tried to trigger ${eachPath}, but there was an error:\n`, error)
                         }
-                        if (!success) {
+                        if (failed) {
                             console.warn(`    Tried to trigger ${eachPath}, but there was an error (info above)`)
                         }
                     }
@@ -1180,7 +1179,7 @@ export const shellApi = Object.defineProperties(
             DISABLE_UPDATE_PROMPT="true"
             
             if ! [ "$VIRKSHOP_DEBUG" = "0" ]; then
-                deno eval --no-lock 'console.log(\`    [\${(new Date()).getTime()-Deno.env.get("_shell_start_time")}ms nix-shell]\`)'
+                deno eval --no-lock --quiet 'console.log(\`    [\${(new Date()).getTime()-Deno.env.get("_shell_start_time")}ms nix-shell]\`)'
             fi
             unset _shell_start_time
 
@@ -1336,5 +1335,5 @@ export const shellApi = Object.defineProperties(
 //             path: tempPath,
 //         })
 //     }
-//     return await run`nix-hash --flat --base32 --type sha256 ${tempPath} ${Stdout(returnAsString)}`
+//     return await $$`nix-hash --flat --base32 --type sha256 ${tempPath}`.text("stdout")
 // }
