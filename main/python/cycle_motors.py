@@ -6,7 +6,7 @@ import time
 # 
 if True:
     PWM_PIN = 33
-    FREQ = 1000 # Hz
+    FREQ = 500 # Hz
 
     GPIO.setmode(GPIO.BOARD)
     GPIO.setup(PWM_PIN, GPIO.OUT)
