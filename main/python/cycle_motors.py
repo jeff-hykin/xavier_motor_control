@@ -19,9 +19,10 @@ xavier_max_angle = 2000 # microseconds pulse width
 def angle_to_pulse_with(angle):
     # (0 to 360) to (1000 to 2000)
     return ((angle % 360/360)*1000)+1000
+
 try:
     while True:
-        pwm.start(angle_to_pulse_with(0))
+        pwm.start(0)
         time.sleep(1)
         
         set_pulse_width(angle_to_pulse_with(0))
