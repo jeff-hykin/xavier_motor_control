@@ -2,7 +2,7 @@
 
 #define DBUS_RX 10  // Choose a pin that supports change interrupts
 
-SoftwareSerial dbusSerial(DBUS_RX, -1); // RX only
+SoftwareSerial dbusSerial(DBUS_RX, -1, true); // RX only
 
 void setup() {
   Serial.begin(115200);        // For debug output
@@ -23,7 +23,45 @@ void printByteBinary(uint8_t b) {
   }
 }
 
-const int message_max_size = 18;
+const int REMOTE_BUF_LEN = 18;
+const int REMOTE_DISCONNECT_TIMEOUT = 100;
+const float ANALOG_MAX_VALUE = 660;  ///< Max value received by one of the sticks. 
+const int16_t GAMEPAD_JOYSTICK_MAX_VALUE = 32767; 
+
+enum Switch {
+  LEFT_SWITCH,  
+  RIGHT_SWITCH  
+};
+
+enum SwitchState {
+  UNKNOWN,
+  UP,
+  DOWN,
+  MID
+};
+
+struct RemoteInfo {
+  uint32_t updateCounter = 0;
+  int16_t rightHorizontal = 0;
+  int16_t rightVertical = 0;
+  int16_t leftHorizontal = 0;
+  int16_t leftVertical = 0;
+  SwitchState leftSwitch = SwitchState::UNKNOWN;
+  SwitchState rightSwitch = SwitchState::UNKNOWN;
+  /// Mouse information
+  struct
+  {
+      int16_t x = 0;
+      int16_t y = 0;
+      int16_t z = 0;
+      bool l = false;
+      bool r = false;
+  } mouse;
+  uint16_t key = 0;   ///< Keyboard information
+  int16_t wheel = 0;  ///< Remote wheel information
+};
+
+const int message_max_size = sizeof(RemoteInfo);
 uint8_t data[message_max_size] = {0}; // message 
 void loop() {
   int index = 0;
@@ -43,50 +81,14 @@ void loop() {
             Serial.print(" ");
             printByteBinary(data[1]);
             Serial.print(" ");
+            printByteBinary(data[2]);
+            Serial.print(" ");
         }
         // Serial.print("index:");
         // Serial.print(index);
         // Serial.print("\n");
         index = 0;
         memset(data, 0, sizeof(data));
-    //   Serial.print("    ^in loop\n");
-    //   Serial.print("    b:");
-    //   Serial.print(b);
-    //   Serial.print(" index:");
-    //   Serial.print(index);
-    //   bool something_went_wrong = index == message_max_size && b != 0;
-    //   Serial.print(" something_went_wrong:");
-    //   Serial.print(something_went_wrong);
-    //   Serial.print("\n");
-    //   // Serial.print("\n");
-    //   if (something_went_wrong) { 
-        uint16_t first = (data[0] << 4) | (data[1] >> 4);
-        uint16_t second = ((data[1] & 0x0F) << 8) | data[2];
-
-    //     // Serial.print("|");
-    //     // // Change endianness (swap byte order of 12-bit-in-16-bit container)
-    //     // uint16_t first_swapped = swap_endian_12bit(first);
-    //     // uint16_t second_swapped = swap_endian_12bit(second);
-    //     // printByteBinary(data[0]);
-    //     // Serial.print(" ");
-    //     // printByteBinary(data[1]);
-    //     // Serial.print(" ");
-    //     // printByteBinary(data[2]);
-    //     // Serial.print(" ");
-    //   }
-    //   // Serial.print(first);
-    //   // Serial.print(",");
-    //   // Serial.print(second);
-    //   // Serial.print("\n");
-    //   // Serial.print(first_swapped);
-    //   // Serial.print("|");
-    //   // Serial.print(second_swapped);
-    //   // Serial.print("\n");
-    //   index = 0;
-    //   memset(data, 0, sizeof(data));
     }
-    // } else {
-    //   index++;
-    // }
   }
 }
