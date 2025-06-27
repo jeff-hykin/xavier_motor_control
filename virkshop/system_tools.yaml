@@ -147,6 +147,21 @@
     asBuildInput: true
     asNativeBuildInput: true
 
+- (integrate):
+    package: [ "python39",]
+    asBuildInput: true
+    asNativeBuildInput: true
+
+- (integrate):
+    package: [ "python39Packages", "pyserial"]
+    asBuildInput: true
+    asNativeBuildInput: true
+
+- (integrate):
+    package: [ "socat" ]
+    asBuildInput: true
+    asNativeBuildInput: true
+
 # 
 # example of including a linux-specific system package
 # 

@@ -42,9 +42,12 @@ const port = await openPort({ name: portPath, baudRate: baudRateString-0 });
 // 
 // send stdin to reader
 // 
-function startReader() {
+async function startReader() {
     for await (const chunk of Deno.stdin.readable) {
-        port.write(chunk)
+        // bug on linux at the moment that causes a segfault
+        if (Deno.build.os  !=  "linux") {
+            port.write(chunk)
+        }
     }
 }
 startReader()
