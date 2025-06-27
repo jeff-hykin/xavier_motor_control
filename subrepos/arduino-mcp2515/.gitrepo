@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/autowp/arduino-mcp2515
+	branch = master
+	commit = a8245acf127955bbbca8bd21577a7452c6f2a160
+	parent = c80fbe479f9cc3a5759bea19826f7d6f96e6cf9d
+	method = merge
+	cmdver = 0.4.5
