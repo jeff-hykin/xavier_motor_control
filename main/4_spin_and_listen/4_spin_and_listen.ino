@@ -32,16 +32,16 @@
 // 
 // helpers
 // 
-    unsigned long timer_AA_duration = 10000; // milliseconds
-    unsigned long timer_AA_last_marker_time = 0;
-    bool timer_AA_has_passed() {
+    unsigned long timer_ForPrint_duration = 10000; // milliseconds
+    unsigned long timer_ForPrint_last_marker_time = 0;
+    bool timer_ForPrint_has_passed() {
         unsigned long current_time = millis();
-        long long duration = current_time - timer_AA_last_marker_time;
-        long long remaining_time_to_wait = duration - timer_AA_duration;
+        long long duration = current_time - timer_ForPrint_last_marker_time;
+        long long remaining_time_to_wait = duration - timer_ForPrint_duration;
         return (remaining_time_to_wait > 0);
     }
-    void timer_AA_reset() {
-        timer_AA_last_marker_time = millis();
+    void timer_ForPrint_reset() {
+        timer_ForPrint_last_marker_time = millis();
     }
     
     unsigned long rate_limiter_last_call_time = 0;
@@ -60,11 +60,12 @@
 // 
     MCP2515 mcp2515(PIN_FOR_MCP2515);
     struct can_frame raw_outgoing_canbus_message;
+    struct can_frame can_msg;
     void setup() {
         while (!Serial);
         Serial.begin(SERIAL_BAUD_RATE);
         // timers
-        timer_AA_last_marker_time = rate_limiter_last_call_time = millis();
+        timer_ForPrint_last_marker_time = rate_limiter_last_call_time = millis();
         
         SPI.begin();
         
@@ -82,31 +83,54 @@
 // 
 int motor_id = 0;
 void loop() {
-    if (timer_AA_has_passed()) {
-        motor_id++;
-        if (motor_id > 3) {
-            motor_id = 0;
+    // 
+    // receive from CANBUS
+    // 
+    if (mcp2515.readMessage(&can_msg) == MCP2515::ERROR_OK) {
+        auto id      = can_msg.can_id;
+        auto can_dlc = can_msg.can_dlc;
+        
+        if (timer_ForPrint_has_passed()) {
+            timer_ForPrint_reset();
+            
+            Serial.print(" [id]:");
+            Serial.print(id);
+            Serial.print(" [can_dlc]:");
+            Serial.print(can_dlc);
+            Serial.print(" [angle1]:");
+            Serial.print(can_msg.data[0]);
+            Serial.print(" [angle2]:");
+            Serial.print(can_msg.data[1]);
+            Serial.print(" [rpm1]:");
+            Serial.print(can_msg.data[2]);
+            Serial.print(" [rpm2]:");
+            Serial.print(can_msg.data[3]);
+            Serial.print(" [current1]:");
+            Serial.print(can_msg.data[4]);
+            Serial.print(" [current2]:");
+            Serial.print(can_msg.data[5]);
+            Serial.print(" [6]:");
+            Serial.print(can_msg.data[6]);
+            Serial.print(" [7]:");
+            Serial.print(can_msg.data[7]);
+            Serial.print("\n");
         }
-        timer_AA_reset();
-        Serial.print("motor_id:");
-        Serial.print(motor_id);
-        Serial.print("\n");
     }
     
     // 
     // send to CANBUS
     // 
-    raw_outgoing_canbus_message.data[0] = 0;
-    raw_outgoing_canbus_message.data[1] = 0;
-    raw_outgoing_canbus_message.data[2] = 0;
-    raw_outgoing_canbus_message.data[3] = 0;
-    raw_outgoing_canbus_message.data[4] = 0;
-    raw_outgoing_canbus_message.data[5] = 0;
-    raw_outgoing_canbus_message.data[6] = 0;
-    raw_outgoing_canbus_message.data[7] = 0;
+    raw_outgoing_canbus_message.data[0] = 10;
+    raw_outgoing_canbus_message.data[1] = 10;
+    raw_outgoing_canbus_message.data[2] = 10;
+    raw_outgoing_canbus_message.data[3] = 10;
+    raw_outgoing_canbus_message.data[4] = 10;
+    raw_outgoing_canbus_message.data[5] = 10;
+    raw_outgoing_canbus_message.data[6] = 10;
+    raw_outgoing_canbus_message.data[7] = 10;
     
-    raw_outgoing_canbus_message.data[motor_id*2] = 10;
-    raw_outgoing_canbus_message.data[motor_id*2+1] = 10;
+    // raw_outgoing_canbus_message.data[motor_id*2] = 10;
+    // raw_outgoing_canbus_message.data[motor_id*2+1] = 10;
     mcp2515.sendMessage(&raw_outgoing_canbus_message);
     
     rate_limiter(CYCLE_TIME); // makes sure this loop always takes at least CYCLE_TIME milliseconds
