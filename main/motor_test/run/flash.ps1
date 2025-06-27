@@ -12,9 +12,9 @@ const $$ = (...args)=>$(...args).noThrow()
 // await $$`false`.text("stderr")
 // await $$`false`.text("combined")
 // await $$`echo`.stdinText("yes\n")
-import { FileSystem, glob } from "https://deno.land/x/quickr@0.8.3/main/file_system.js"
+import { FileSystem, glob } from "https://deno.land/x/quickr@0.8.4/main/file_system.js"
 // import { FileSystem, glob } from "https://deno.land/x/quickr@bfdd547/main/file_system.js"
-import { Console } from "https://deno.land/x/quickr@0.8.3/main/console.js"
+import { Console } from "https://deno.land/x/quickr@0.8.4/main/console.js"
 // import { getPorts, open } from "https://esm.sh/gh/jeff-hykin/deno_serial@0.0.1.3/mod.ts";
 import { getPorts, open } from "https://esm.sh/gh/jeff-hykin/deno_serial@ef80a91/mod.ts";
 
