@@ -12,9 +12,9 @@
 // 
 // parameters you can change
 // 
-    const int UART_SEND_RATE_LIMITER = 100; // milliseconds, NOTE: you need to keep this HIGH enough that whatever is receiving messages can keep up with the arduino
     const int SERIAL_BAUD_RATE = 9600; // this is only for console output / debugging, doesn't matter too much
     const short int CYCLE_TIME = 50; // milliseconds NOTE(!!!): this needs to stay low, otherwise the motor does not respond (I'm unsure why)
+    const int PIN_FOR_MCP2515 = 10; // only change this if you need to change the wiring of the arduino for some reason
 // 
 // parameters you probably DONT want to change
 // 
@@ -23,32 +23,8 @@
     const short int BYTES_PER_CANBUS_MESSAGE = 8;
 
 // 
-// structs and global vars
-// 
-    struct can_frame raw_outgoing_canbus_message;
-
-    struct UartMessageToMotor {
-        uint8_t which_motor = 0;
-        uint8_t velocity = 0; // 128 is the max speed counter clockwise from the top
-    } message_to_motor;
-
-    struct UartMessageFromMotor {
-        int angle;
-        int rpm;
-        int current;
-        uint8_t temperature;
-    } message_from_motor;
-
-// 
 // helpers
 // 
-    unsigned long time_since_last_call1_var = 0;
-    void time_since_last_call1_var(unsigned int cycle_time_milliseconds) {
-        unsigned long current_time = millis();
-        unsigned long duration = current_time - time_since_last_call1_var;
-        return duration;
-    }
-    
     unsigned long rate_limiter_last_call_time = 0;
     void rate_limiter(unsigned int cycle_time_milliseconds) {
         unsigned long current_time = millis();
@@ -63,14 +39,12 @@
 // 
 // setup
 // 
-    const int PIN_FOR_MCP2515 = 10;
     MCP2515 mcp2515(PIN_FOR_MCP2515);
     
     void setup() {
         while (!Serial);
         Serial.begin(SERIAL_BAUD_RATE);
         rate_limiter_last_call_time = millis();
-        time_since_last_call1_var = millis();
         
         SPI.begin();
         
@@ -87,54 +61,42 @@
 // main code
 // 
 void loop() {
-    // 
-    // receive from CANBUS
-    // 
-    if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
-        auto id      = canMsg.can_id;
-        auto can_dlc = canMsg.can_dlc;
+    // // 
+    // // receive from CANBUS
+    // // 
+    // if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
+    //     auto id      = canMsg.can_id;
+    //     auto can_dlc = canMsg.can_dlc;
     
-        Serial.print(" [id]:");
-        Serial.print(id);
-        Serial.print(" [can_dlc]:");
-        Serial.print(can_dlc);
-        Serial.print(" [angle1]:");
-        Serial.print(canMsg.data[0]);
-        Serial.print(" [angle2]:");
-        Serial.print(canMsg.data[1]);
-        Serial.print(" [rpm1]:");
-        Serial.print(canMsg.data[2]);
-        Serial.print(" [rpm2]:");
-        Serial.print(canMsg.data[3]);
-        Serial.print(" [current1]:");
-        Serial.print(canMsg.data[4]);
-        Serial.print(" [current2]:");
-        Serial.print(canMsg.data[5]);
-        Serial.print(" [6]:");
-        Serial.print(canMsg.data[6]);
-        Serial.print(" [7]:");
-        Serial.print(canMsg.data[7]);
-        Serial.print("\n");
-    }
-    
-    // 
-    // send to UART
-    // 
-    if (time_since_last_call1_var UART_SEND_RATE_LIMITER) {
-        
-    }
-    
-    
-    // 
-    // receive from UART
-    // 
+    //     Serial.print(" [id]:");
+    //     Serial.print(id);
+    //     Serial.print(" [can_dlc]:");
+    //     Serial.print(can_dlc);
+    //     Serial.print(" [angle1]:");
+    //     Serial.print(canMsg.data[0]);
+    //     Serial.print(" [angle2]:");
+    //     Serial.print(canMsg.data[1]);
+    //     Serial.print(" [rpm1]:");
+    //     Serial.print(canMsg.data[2]);
+    //     Serial.print(" [rpm2]:");
+    //     Serial.print(canMsg.data[3]);
+    //     Serial.print(" [current1]:");
+    //     Serial.print(canMsg.data[4]);
+    //     Serial.print(" [current2]:");
+    //     Serial.print(canMsg.data[5]);
+    //     Serial.print(" [6]:");
+    //     Serial.print(canMsg.data[6]);
+    //     Serial.print(" [7]:");
+    //     Serial.print(canMsg.data[7]);
+    //     Serial.print("\n");
+    // }
     
     // 
     // send to CANBUS
     // 
     raw_outgoing_canbus_message.data[0] = 0;
     raw_outgoing_canbus_message.data[1] = 0;
-    raw_outgoing_canbus_message.data[2] = 0; // 128 is the max speed counter clockwise from the top, 129 is max speed clockwise // 255 is zero speed
+    raw_outgoing_canbus_message.data[2] = 40; // 128 is the max speed counter clockwise from the top, 129 is max speed clockwise // 255 is zero speed
     raw_outgoing_canbus_message.data[3] = 0;
     raw_outgoing_canbus_message.data[4] = 0;
     raw_outgoing_canbus_message.data[5] = 0;
