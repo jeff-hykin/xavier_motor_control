@@ -1,6 +1,5 @@
 import { FileSystem, glob } from "https://deno.land/x/quickr@0.8.4/main/file_system.js"
-// import { getPorts, open } from "https://esm.sh/gh/jeff-hykin/deno_serial@0.0.2.0/mod.ts";
-import { getPorts, open } from "https://esm.sh/gh/jeff-hykin/deno_serial@4c1f56f/mod.ts";
+import { getPorts, open } from "https://esm.sh/gh/jeff-hykin/deno_serial@0.0.2.0/mod.ts";
 import { Select } from "https://esm.sh/@jsr/cliffy__prompt@1.0.0-rc.7/select.ts"
 // patch to work with Deno 1.x
 if (!Deno.stdin.isTerminal) {

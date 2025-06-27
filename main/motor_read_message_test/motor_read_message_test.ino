@@ -46,6 +46,7 @@
 // 
 // setup
 // 
+    struct can_frame can_msg;
     MCP2515 mcp2515(PIN_FOR_MCP2515);
     // struct can_frame raw_outgoing_canbus_message;
     void setup() {
@@ -71,30 +72,30 @@ void loop() {
     // 
     // receive from CANBUS
     // 
-    if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
-        auto id      = canMsg.can_id;
-        auto can_dlc = canMsg.can_dlc;
+    if (mcp2515.readMessage(&can_msg) == MCP2515::ERROR_OK) {
+        auto id      = can_msg.can_id;
+        auto can_dlc = can_msg.can_dlc;
         
         Serial.print(" [id]:");
         Serial.print(id);
         Serial.print(" [can_dlc]:");
         Serial.print(can_dlc);
         Serial.print(" [angle1]:");
-        Serial.print(canMsg.data[0]);
+        Serial.print(can_msg.data[0]);
         Serial.print(" [angle2]:");
-        Serial.print(canMsg.data[1]);
+        Serial.print(can_msg.data[1]);
         Serial.print(" [rpm1]:");
-        Serial.print(canMsg.data[2]);
+        Serial.print(can_msg.data[2]);
         Serial.print(" [rpm2]:");
-        Serial.print(canMsg.data[3]);
+        Serial.print(can_msg.data[3]);
         Serial.print(" [current1]:");
-        Serial.print(canMsg.data[4]);
+        Serial.print(can_msg.data[4]);
         Serial.print(" [current2]:");
-        Serial.print(canMsg.data[5]);
+        Serial.print(can_msg.data[5]);
         Serial.print(" [6]:");
-        Serial.print(canMsg.data[6]);
+        Serial.print(can_msg.data[6]);
         Serial.print(" [7]:");
-        Serial.print(canMsg.data[7]);
+        Serial.print(can_msg.data[7]);
         Serial.print("\n");
     }
     

@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-all --no-lock --quiet
+#!/usr/bin/env -S deno run --allow-all --no-lock --quiet --unstable
 
 // #!/usr/bin/env sh
 // "\"",`$(echo --% ' |out-null)" >$null;function :{};function dv{<#${/*'>/dev/null )` 2>/dev/null;dv() { #>
@@ -36,7 +36,7 @@ const baudRateString = Deno.args[1] || await Select.prompt({
     ],
 })
 try {
-    const port = await open({ name: portPath, baudRate: baudRateString-0 });
+    const port = await openPort({ name: portPath, baudRate: baudRateString-0 });
     while (1) {
         // send bytes directly to stdout
         Deno.stdout.write(await port.read())
