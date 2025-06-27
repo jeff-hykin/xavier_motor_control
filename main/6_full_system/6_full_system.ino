@@ -21,20 +21,23 @@
 // parameters you can change
 // 
     // Define RX and TX pins for software serial
-    const int UART_SEND_RATE_LIMITER = 100; // milliseconds, NOTE: you need to keep this HIGH enough that whatever is receiving messages can keep up with the arduino
-    const int UART_BAUD_RATE = 9600; // this is only for console output / debugging, doesn't matter too much
-    const int UART_RX_PIN = 6 // green
-    const int UART_TX_PIN = 7 // purple
-    const int SERIAL_BAUD_RATE = 9600; // this is only for console output / debugging, doesn't matter too much
-    const int PIN_FOR_MCP2515 = 10; // only change this if you need to change the wiring of the arduino for some reason
-    const unsigned long DEBUGGING_PRINT_RATE_LIMITER = 500; // milliseconds
-    const short int CYCLE_TIME = 50; // milliseconds NOTE(!!!): this needs to stay low, otherwise the motor does not respond (I'm unsure why)
+    const int32_t UART_SEND_RATE_LIMITER = 100; // milliseconds, NOTE: you need to keep this HIGH enough that whatever is receiving messages can keep up with the arduino
+    const int32_t UART_BAUD_RATE = 9600; // this is only for console output / debugging, doesn't matter too much
+    const int32_t UART_RX_PIN = 6; // green
+    const int32_t UART_TX_PIN = 7; // purple
+    const int32_t SERIAL_BAUD_RATE = 9600; // this is only for console output / debugging, doesn't matter too much
+    const int32_t PIN_FOR_MCP2515 = 10; // only change this if you need to change the wiring of the arduino for some reason
+    const uint32_t DEBUGGING_PRINT_RATE_LIMITER = 500; // milliseconds
+    const int32_t CYCLE_TIME = 50; // milliseconds NOTE(!!!): this needs to stay low, otherwise the motor does not respond (I'm unsure why)
+    const bool LOCKSTEP_MESSAGES = false;   // when true then a uart message is ALWAYS and ONLY sent immediately before listening for a message
+                                            // This can makes things easier to process, but has the problem of re-sending messages
+                                            // (as well as increased rates of dropped outgoing messages)
 // 
 // parameters you probably DONT want to change
 // 
     // many are based on the dji gm6020 datasheet: https://rm-static.djicdn.com/tem/17348/RM%20GM6020%20%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E%EF%BC%88%E8%8B%B1%EF%BC%8920231103.pdf
-    const short int OUTGOING_MESSAGE_ID_FOR_FIRST_FOUR_MOTORS = 0x1FF;  // NOTE: this value comes from the dji gm6020 datasheet
-    const short int BYTES_PER_CANBUS_MESSAGE = 8;
+    const int32_t OUTGOING_MESSAGE_ID_FOR_FIRST_FOUR_MOTORS = 0x1FF;  // NOTE: this value comes from the dji gm6020 datasheet
+    const int32_t BYTES_PER_CANBUS_MESSAGE = 8;
 
 // 
 // helpers
@@ -45,54 +48,65 @@
     } uart_message_to_motor;
 
     struct UartMessageFromMotor {
-        int angle;
-        int rpm;
-        int current;
-        uint8_t temperature;
+        uint32_t id;            // Message ID
+        uint8_t can_dlc;        // Data Length Code
+        uint16_t angle;         // Combined from data[0] and data[1]
+        uint16_t rpm;           // Combined from data[2] and data[3]
+        int16_t current;       // Combined from data[4] and data[5]
+        uint8_t temperature;    // From data[6]
+        uint32_t timestamp;
     } uart_message_from_motor;
+    bool latest_message_has_been_sent = false;
     
-    const unsigned long timer_ForUart_duration = UART_SEND_RATE_LIMITER; // milliseconds
-    unsigned long timer_ForUart_last_marker_time = 0;
+    const uint32_t timer_ForUart_duration = UART_SEND_RATE_LIMITER; // milliseconds
+    uint32_t timer_ForUart_last_marker_time = 0;
     bool timer_ForUart_has_passed() {
-        unsigned long current_time = millis();
-        long long duration = current_time - timer_ForUart_last_marker_time;
-        long long remaining_time_to_wait = duration - timer_ForUart_duration;
+        uint32_t current_time = millis();
+        int64_t duration = current_time - timer_ForUart_last_marker_time;
+        int64_t remaining_time_to_wait = duration - timer_ForUart_duration;
         return (remaining_time_to_wait > 0);
     }
     void timer_ForUart_reset() {
         timer_ForUart_last_marker_time = millis();
     }
     
-    const unsigned long timer_ForPrint_duration = DEBUGGING_PRINT_RATE_LIMITER; // milliseconds
-    unsigned long timer_ForPrint_last_marker_time = 0;
+    const uint32_t timer_ForPrint_duration = DEBUGGING_PRINT_RATE_LIMITER; // milliseconds
+    uint32_t timer_ForPrint_last_marker_time = 0;
     bool timer_ForPrint_has_passed() {
-        unsigned long current_time = millis();
-        long long duration = current_time - timer_ForPrint_last_marker_time;
-        long long remaining_time_to_wait = duration - timer_ForPrint_duration;
+        uint32_t current_time = millis();
+        int64_t duration = current_time - timer_ForPrint_last_marker_time;
+        int64_t remaining_time_to_wait = duration - timer_ForPrint_duration;
         return (remaining_time_to_wait > 0);
     }
     void timer_ForPrint_reset() {
         timer_ForPrint_last_marker_time = millis();
     }
     
-    unsigned long rate_limiter_last_call_time = 0;
-    void rate_limiter(unsigned int cycle_time_milliseconds) {
-        unsigned long current_time = millis();
-        long long duration = current_time - rate_limiter_last_call_time;
-        long long remaining_time_to_wait = duration - cycle_time_milliseconds;
+    uint32_t rate_limiter_last_call_time = 0;
+    void rate_limiter(uint32_t cycle_time_milliseconds) {
+        uint32_t current_time = millis();
+        int64_t duration = current_time - rate_limiter_last_call_time;
+        int64_t remaining_time_to_wait = duration - cycle_time_milliseconds;
         if (remaining_time_to_wait > 0) {
             delay(remaining_time_to_wait);
         }
         rate_limiter_last_call_time = current_time;
     }
-
+    
 // 
 // setup
 // 
     SoftwareSerial uart1(UART_RX_PIN, UART_TX_PIN);
     MCP2515 mcp2515(PIN_FOR_MCP2515);
     struct can_frame raw_outgoing_canbus_message;
-    struct can_frame can_msg;
+    struct can_frame raw_incoming_can_msg;
+    void send_uart_message() {
+        // Send the struct as bytes
+        byte* ptr = (byte*)&uart_message_from_motor;
+        for (uint32_t i = 0; i < sizeof(uart_message_from_motor); i++) {
+            uart1.write(ptr[i]);
+        }
+    }
     void setup() {
         while (!Serial);
         Serial.begin(SERIAL_BAUD_RATE);
@@ -115,68 +129,76 @@
 // 
 // main code
 // 
-bool debugging = false;
+bool debugging = true;
 void loop() {
     // 
     // receive from CANBUS
     // 
-    if (mcp2515.readMessage(&can_msg) == MCP2515::ERROR_OK) {
+    if (mcp2515.readMessage(&raw_incoming_can_msg) == MCP2515::ERROR_OK) {
         
         if (debugging && timer_ForPrint_has_passed()) {
-            auto id      = can_msg.can_id;
-            auto can_dlc = can_msg.can_dlc;
+            uint32_t id     = raw_incoming_can_msg.can_id;  // sizeof = 4
+            uint8_t can_dlc = raw_incoming_can_msg.can_dlc; // sizeof = 1
             timer_ForPrint_reset();
             
             Serial.print(" [id]:");
             Serial.print(id);
             Serial.print(" [can_dlc]:");
             Serial.print(can_dlc);
-            Serial.print(" [angle1]:");
-            Serial.print(can_msg.data[0]);
-            Serial.print(" [angle2]:");
-            Serial.print(can_msg.data[1]);
-            Serial.print(" [rpm1]:");
-            Serial.print(can_msg.data[2]);
-            Serial.print(" [rpm2]:");
-            Serial.print(can_msg.data[3]);
-            Serial.print(" [current1]:");
-            Serial.print(can_msg.data[4]);
-            Serial.print(" [current2]:");
-            Serial.print(can_msg.data[5]);
-            Serial.print(" [6]:");
-            Serial.print(can_msg.data[6]);
-            Serial.print(" [7]:");
-            Serial.print(can_msg.data[7]);
+            Serial.print(" [angle1]:"); // higher order byte
+            Serial.print(raw_incoming_can_msg.data[0]);
+            Serial.print(" [angle2]:"); // lower order byte
+            Serial.print(raw_incoming_can_msg.data[1]);
+            Serial.print(" [rpm1]:");  // higher order byte
+            Serial.print(raw_incoming_can_msg.data[2]);
+            Serial.print(" [rpm2]:"); // lower order byte
+            Serial.print(raw_incoming_can_msg.data[3]);
+            Serial.print(" [current1]:"); // higher order byte
+            Serial.print(raw_incoming_can_msg.data[4]);
+            Serial.print(" [current2]:"); // lower order byte
+            Serial.print(raw_incoming_can_msg.data[5]);
+            Serial.print(" [motor temp]:");
+            Serial.print(raw_incoming_can_msg.data[6]);
+            Serial.print(" [null]:");
+            Serial.print(raw_incoming_can_msg.data[7]);
             Serial.print("\n");
         }
         
-        // 
-        // send over uart
-        // 
-        if (timer_ForUart_has_passed()) {
-            timer_ForUart_reset();
-            
-            // FIXME: switch this to use uart_message_from_motor
-            
-            // Send the struct as bytes
-            byte* ptr = (byte*)&can_msg;
-            for (unsigned int i = 0; i < sizeof(can_msg); i++) {
-                uart.write(ptr[i]);
-            }
-        }
+        // update the latest message
+        uart_message_from_motor.id          = raw_incoming_can_msg.can_id;
+        uart_message_from_motor.can_dlc     = raw_incoming_can_msg.can_dlc;
+        uart_message_from_motor.angle       = (raw_incoming_can_msg.data[0] << 8) | raw_incoming_can_msg.data[1];
+        uart_message_from_motor.rpm         = (raw_incoming_can_msg.data[2] << 8) | raw_incoming_can_msg.data[3];
+        uart_message_from_motor.current     = (int16_t)((raw_incoming_can_msg.data[4] << 8) | raw_incoming_can_msg.data[5]);
+        uart_message_from_motor.temperature = raw_incoming_can_msg.data[6];
+        uart_message_from_motor.timestamp   = millis();
+        latest_message_has_been_sent = false;
+    }
+    
+    // 
+    // (maybe) send over uart
+    // 
+    // note: latest_message_has_been_sent means we never send the same message twice
+    if (!LOCKSTEP_MESSAGES && !latest_message_has_been_sent && timer_ForUart_has_passed()) {
+        timer_ForUart_reset();
+        send_uart_message();
     }
     
     // 
     // read from uart if there is enough data
     // 
-    if (uart.available() >= sizeof(UartMessageToMotor)) {
-        byte* ptr = (byte*)&message_from_r;
+    if (uart1.available() >= sizeof(UartMessageToMotor)) {
+        byte* ptr = (byte*)&uart_message_to_motor;
         for (size_t i = 0; i < sizeof(UartMessageToMotor); i++) {
-            ptr[i] = uart.read();
+            ptr[i] = uart1.read();
         }
         
         // mutate the continually-sent message
         raw_outgoing_canbus_message.data[uart_message_to_motor.which_motor*2] = -uart_message_to_motor.velocity;
+        
+        if (LOCKSTEP_MESSAGES) {
+            send_uart_message();
+        }
         
         // FIXME: have a motor timeout or a heartbeat kind of thing as a saftey net
     }
@@ -186,5 +208,5 @@ void loop() {
     // 
     mcp2515.sendMessage(&raw_outgoing_canbus_message);
     
-    rate_limiter(CYCLE_TIME); // makes sure this loop always takes at least CYCLE_TIME milliseconds
+    rate_limiter(CYCLE_TIME); // this makes sure each loop iteration takes at least CYCLE_TIME milliseconds
 }
