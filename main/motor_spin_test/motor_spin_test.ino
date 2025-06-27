@@ -101,14 +101,14 @@ void loop() {
     // 
     // send to CANBUS
     // 
-    raw_outgoing_canbus_message.data[0] = 0;
-    raw_outgoing_canbus_message.data[1] = 0;
-    raw_outgoing_canbus_message.data[2] = 40; // 128 is the max speed counter clockwise from the top, 129 is max speed clockwise // 255 is zero speed
-    raw_outgoing_canbus_message.data[3] = 0;
-    raw_outgoing_canbus_message.data[4] = 0;
-    raw_outgoing_canbus_message.data[5] = 0;
-    raw_outgoing_canbus_message.data[6] = 0;
-    raw_outgoing_canbus_message.data[7] = 0;
+    raw_outgoing_canbus_message.data[0] = 10;
+    raw_outgoing_canbus_message.data[1] = 10;
+    raw_outgoing_canbus_message.data[2] = 10;
+    raw_outgoing_canbus_message.data[3] = 10;
+    raw_outgoing_canbus_message.data[4] = 10;
+    raw_outgoing_canbus_message.data[5] = 10;
+    raw_outgoing_canbus_message.data[6] = 10;
+    raw_outgoing_canbus_message.data[7] = 10;
     mcp2515.sendMessage(&raw_outgoing_canbus_message);
     
     rate_limiter(CYCLE_TIME); // makes sure this loop always takes at least CYCLE_TIME milliseconds
