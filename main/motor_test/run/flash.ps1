@@ -14,9 +14,9 @@ const $$ = (...args)=>$(...args).noThrow()
 // await $$`echo`.stdinText("yes\n")
 import { FileSystem, glob } from "https://deno.land/x/quickr@0.8.3/main/file_system.js"
 // import { FileSystem, glob } from "https://deno.land/x/quickr@bfdd547/main/file_system.js"
-import { Console } from "https://deno.land/x/quickr@0.8.1/main/console.js"
-// import { getPorts, open } from "https://esm.sh/gh/jeff-hykin/deno_serial@0.0.1.2/mod.ts";
-import { getPorts, open } from "https://esm.sh/gh/jeff-hykin/deno_serial@2d60965/mod.ts";
+import { Console } from "https://deno.land/x/quickr@0.8.3/main/console.js"
+// import { getPorts, open } from "https://esm.sh/gh/jeff-hykin/deno_serial@0.0.1.3/mod.ts";
+import { getPorts, open } from "https://esm.sh/gh/jeff-hykin/deno_serial@ef80a91/mod.ts";
 
 // 
 // helper 
@@ -36,7 +36,7 @@ async function getArduinoPort() {
     let whichPort = null
     if (possibleArduinoPorts.length === 0) {
         throw Error(`\n\nHere's the ports I see:\n    ${JSON.stringify(ports.map(each=>each.name))}\n\nPROBLEM: I didn't see any USB ports in there.\nIs the arduino plugged in?\n`)
-    } else if (ports.length !== 1) {
+    } else if (possibleArduinoPorts.length !== 1) {
         whichPort = await Console.askFor.oneOf(possibleArduinoPorts.map(each=>each.name))
     } else {
         whichPort = ports[0].name
