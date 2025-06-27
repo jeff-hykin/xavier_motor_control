@@ -8,6 +8,13 @@
         // first byte is the motor number (0 to 3)
         // 128 is the max speed clockwise (set motor on table, look at it from the top down)
         // -128 is the max speed counter clockwise
+    // versioning
+        // Used library   Version Path
+        // SPI            1.0     $PROJECT/virkshop/temporary.ignore/long_term/home/Library/Arduino15/packages/arduino/hardware/avr/1.8.6/libraries/SPI
+        // autowp-mcp2515 1.2.1   $PROJECT/subrepos/arduino-mcp2515
+
+        // Used platform Version Path
+        // arduino:avr   1.8.6   $PROJECT/virkshop/temporary.ignore/long_term/home/Library/Arduino15/packages/arduino/hardware/avr/1.8.6
 
 // 
 // parameters you can change
@@ -40,7 +47,7 @@
 // setup
 // 
     MCP2515 mcp2515(PIN_FOR_MCP2515);
-    
+    struct can_frame raw_outgoing_canbus_message;
     void setup() {
         while (!Serial);
         Serial.begin(SERIAL_BAUD_RATE);
