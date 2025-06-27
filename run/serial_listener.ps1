@@ -35,14 +35,26 @@ const baudRateString = Deno.args[1] || await Select.prompt({
         `4000000`, 
     ],
 })
-try {
-    const port = await openPort({ name: portPath, baudRate: baudRateString-0 });
-    while (1) {
-        // send bytes directly to stdout
-        Deno.stdout.write(await port.read())
+
+
+const port = await openPort({ name: portPath, baudRate: baudRateString-0 });
+
+// 
+// send stdin to reader
+// 
+function startReader() {
+    for await (const chunk of Deno.stdin.readable) {
+        port.write(chunk)
     }
-} catch (error) {
-    console.debug(`error is:`,error)
+}
+startReader()
+
+// 
+// print stdout
+// 
+while (1) {
+    // send bytes directly to stdout
+    Deno.stdout.write(await port.read())
 }
 
 // (this comment is part of deno-guillotine, dont remove) #>
