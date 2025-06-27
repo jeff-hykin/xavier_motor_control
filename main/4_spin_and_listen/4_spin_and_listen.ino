@@ -22,6 +22,7 @@
     const int SERIAL_BAUD_RATE = 9600; // this is only for console output / debugging, doesn't matter too much
     const short int CYCLE_TIME = 50; // milliseconds NOTE(!!!): this needs to stay low, otherwise the motor does not respond (I'm unsure why)
     const int PIN_FOR_MCP2515 = 10; // only change this if you need to change the wiring of the arduino for some reason
+    const unsigned long timer_ForPrint_duration = 500; // milliseconds
 // 
 // parameters you probably DONT want to change
 // 
@@ -32,7 +33,6 @@
 // 
 // helpers
 // 
-    unsigned long timer_ForPrint_duration = 10000; // milliseconds
     unsigned long timer_ForPrint_last_marker_time = 0;
     bool timer_ForPrint_has_passed() {
         unsigned long current_time = millis();
