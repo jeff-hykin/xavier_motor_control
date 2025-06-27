@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-all --no-lock --quiet
+#!/usr/bin/env -S deno run --allow-all --no-lock --quiet --unstable
 
 // #!/usr/bin/env sh
 // "\"",`$(echo --% ' |out-null)" >$null;function :{};function dv{<#${/*'>/dev/null )` 2>/dev/null;dv() { #>
@@ -12,10 +12,56 @@ const $$ = (...args)=>$(...args).noThrow()
 // await $$`false`.text("stderr")
 // await $$`false`.text("combined")
 // await $$`echo`.stdinText("yes\n")
-// import { FileSystem, glob } from "https://deno.land/x/quickr@0.8.1/main/file_system.js"
+import { FileSystem, glob } from "https://deno.land/x/quickr@0.8.3/main/file_system.js"
+// import { FileSystem, glob } from "https://deno.land/x/quickr@bfdd547/main/file_system.js"
+import { Console } from "https://deno.land/x/quickr@0.8.1/main/console.js"
+// import { getPorts, open } from "https://esm.sh/gh/jeff-hykin/deno_serial@0.0.1.2/mod.ts";
+import { getPorts, open } from "https://esm.sh/gh/jeff-hykin/deno_serial@2d60965/mod.ts";
 
-await $$`arduino-cli config init`
-await $$`arduino-cli core update-index`
-await $$`arduino-cli core install arduino:avr`
+// 
+// helper 
+// 
+async function getArduinoPort() {
+    const ports = await getPorts()
+    let possibleArduinoPorts = ports||[]
+    if (ports) {
+        if (Deno.build.os === "linux") {
+            // only look at USB ports
+            possibleArduinoPorts = ports.filter(each=>each.name.startsWith("/dev/ttyACM"))
+        } else if (Deno.build.os === "darwin") {
+            // only look at USB ports
+            possibleArduinoPorts = ports.filter(each=>each.name.startsWith("/dev/tty.usbmodem"))
+        }
+    }
+    let whichPort = null
+    if (possibleArduinoPorts.length === 0) {
+        throw Error(`\n\nHere's the ports I see:\n    ${JSON.stringify(ports.map(each=>each.name))}\n\nPROBLEM: I didn't see any USB ports in there.\nIs the arduino plugged in?\n`)
+    } else if (ports.length !== 1) {
+        whichPort = await Console.askFor.oneOf(possibleArduinoPorts.map(each=>each.name))
+    } else {
+        whichPort = ports[0].name
+    }
+    return whichPort
+}
+
+// 
+// setup
+// 
+const projectFolderOrNull = await FileSystem.walkUpUntil({
+    subPath:"virkshop",
+    startPath: FileSystem.thisFolder,
+})
+if (projectFolderOrNull === null) {
+    throw Error("Couldn't find project folder")
+}
+
+// 
+// compile
+// 
+const port = await getArduinoPort()
+var {code: failed} = await $$`arduino-cli upload -p ${port} --library ${`${projectFolderOrNull}/subrepos/arduino-mcp2515`} --fqbn arduino:avr:uno .`
+// var {code: failed} = await $$`arduino-cli compile --fqbn arduino:avr:uno . --library ${`${projectFolderOrNull}/subrepos/arduino-mcp2515`}`
+// if (!failed) {
+// }
 
 // (this comment is part of deno-guillotine, dont remove) #>
