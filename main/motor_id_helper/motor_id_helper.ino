@@ -32,7 +32,7 @@
 // 
 // helpers
 // 
-    unsigned long timer_AA_duration = 1000; // milliseconds
+    unsigned long timer_AA_duration = 10000; // milliseconds
     unsigned long timer_AA_last_marker_time = 0;
     bool timer_AA_has_passed() {
         unsigned long current_time = millis();
@@ -96,14 +96,17 @@ void loop() {
     // 
     // send to CANBUS
     // 
-    raw_outgoing_canbus_message.data[0] = 10;
-    raw_outgoing_canbus_message.data[1] = 10;
-    raw_outgoing_canbus_message.data[2] = 10;
-    raw_outgoing_canbus_message.data[3] = 10;
-    raw_outgoing_canbus_message.data[4] = 10;
-    raw_outgoing_canbus_message.data[5] = 10;
-    raw_outgoing_canbus_message.data[6] = 10;
-    raw_outgoing_canbus_message.data[7] = 10;
+    raw_outgoing_canbus_message.data[0] = 0;
+    raw_outgoing_canbus_message.data[1] = 0;
+    raw_outgoing_canbus_message.data[2] = 0;
+    raw_outgoing_canbus_message.data[3] = 0;
+    raw_outgoing_canbus_message.data[4] = 0;
+    raw_outgoing_canbus_message.data[5] = 0;
+    raw_outgoing_canbus_message.data[6] = 0;
+    raw_outgoing_canbus_message.data[7] = 0;
+    
+    raw_outgoing_canbus_message.data[motor_id*2] = 10;
+    raw_outgoing_canbus_message.data[motor_id*2+1] = 10;
     mcp2515.sendMessage(&raw_outgoing_canbus_message);
     
     rate_limiter(CYCLE_TIME); // makes sure this loop always takes at least CYCLE_TIME milliseconds
