@@ -66,7 +66,10 @@ uint8_t data[message_max_size] = {0}; // message
 void loop() {
   int index = 0;
   while (dbusSerial.available()) {
-    byte b = dbusSerial.read();
+    char b = dbusSerial.read();
+    if (b == -1) {
+        continue;
+    }
     if (index < message_max_size) {
       data[index++] = (uint8_t)b;
     }
