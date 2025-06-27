@@ -17,6 +17,12 @@ import { FileSystem, glob } from "https://deno.land/x/quickr@0.8.4/main/file_sys
 import { Console } from "https://deno.land/x/quickr@0.8.4/main/console.js"
 // import { getPorts, open } from "https://esm.sh/gh/jeff-hykin/deno_serial@0.0.1.3/mod.ts";
 import { getPorts, open } from "https://esm.sh/gh/jeff-hykin/deno_serial@ef80a91/mod.ts";
+// import { Input } from "https://esm.sh/@jsr/cliffy__prompt@1.0.0-rc.7/input.ts"
+// // patch to work with Deno 1.x
+// if (!Deno.stdin.isTerminal) {
+//     Deno.stdin.isTerminal = ()=>true
+// }
+
 
 // 
 // helper 
@@ -58,10 +64,11 @@ if (projectFolderOrNull === null) {
 // 
 // compile
 // 
+Deno.cwd(FileSystem.dirname(FileSystem.thisFolder))
 const port = await getArduinoPort()
-var {code: failed} = await $$`arduino-cli upload -p ${port} --library ${`${projectFolderOrNull}/subrepos/arduino-mcp2515`} --fqbn arduino:avr:uno .`
-// var {code: failed} = await $$`arduino-cli compile --fqbn arduino:avr:uno . --library ${`${projectFolderOrNull}/subrepos/arduino-mcp2515`}`
-// if (!failed) {
-// }
+var {code: failed} = await $$`arduino-cli compile --fqbn arduino:avr:uno . --library ${`${projectFolderOrNull}/subrepos/arduino-mcp2515`}`
+if (!failed) {
+    var {code: failed} = await $$`arduino-cli upload -p ${port} --fqbn arduino:avr:uno .`
+}
 
 // (this comment is part of deno-guillotine, dont remove) #>
