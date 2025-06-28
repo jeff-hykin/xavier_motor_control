@@ -21,7 +21,7 @@
 // parameters you can change
 // 
     // Define RX and TX pins for software serial
-    const int32_t UART_SEND_RATE_LIMITER = 100; // milliseconds, NOTE: you need to keep this HIGH enough that whatever is receiving messages can keep up with the arduino
+    const int32_t UART_SEND_RATE_LIMITER = 1000; // milliseconds, NOTE: you need to keep this HIGH enough that whatever is receiving messages can keep up with the arduino
     const int32_t UART_BAUD_RATE = 9600; // this is only for console output / debugging, doesn't matter too much
     const int32_t UART_RX_PIN = 6; // green
     const int32_t UART_TX_PIN = 7; // purple
@@ -44,16 +44,16 @@
 // 
     struct UartMessageToMotor {
         uint8_t which_motor = 0;
-        int8_t velocity = 0; // 128 is the max speed counter clockwise from the top
+        int8_t velocity = 0; // 128 is the max speed clockwise looking down when the motor is flat on a table
     } uart_message_to_motor;
 
     struct UartMessageFromMotor {
         uint32_t id;            // Message ID
         uint8_t can_dlc;        // Data Length Code
-        uint16_t angle;         // Combined from data[0] and data[1]
-        uint16_t rpm;           // Combined from data[2] and data[3]
-        int16_t current;       // Combined from data[4] and data[5]
-        uint8_t temperature;    // From data[6]
+        uint16_t angle;         // Combined from data[0] and data[1] // NOT degrees
+        int16_t rpm;           // Combined from data[2] and data[3] // positive when velocity is clockwise
+        int16_t current;       // Combined from data[4] and data[5] // positive when energy is being consumed
+        uint8_t temperature;    // From data[6] // celsius
         uint32_t timestamp;
     } uart_message_from_motor;
     bool latest_message_has_been_sent = false;
@@ -136,6 +136,23 @@ void loop() {
     // 
     if (mcp2515.readMessage(&raw_incoming_can_msg) == MCP2515::ERROR_OK) {
         
+        // update the latest message
+        uart_message_from_motor.id          = raw_incoming_can_msg.can_id;
+        uart_message_from_motor.can_dlc     = raw_incoming_can_msg.can_dlc;
+        uart_message_from_motor.angle       = (raw_incoming_can_msg.data[0] << 8) | raw_incoming_can_msg.data[1];
+        uart_message_from_motor.rpm         = -(int16_t)(raw_incoming_can_msg.data[2] << 8) | raw_incoming_can_msg.data[3];
+        uart_message_from_motor.current     = (int16_t)((raw_incoming_can_msg.data[4] << 8) | raw_incoming_can_msg.data[5]);
+        uart_message_from_motor.temperature = raw_incoming_can_msg.data[6];
+        uart_message_from_motor.timestamp   = millis();
+        latest_message_has_been_sent = false;
+    }
+    
+    // 
+    // (maybe) send over uart
+    // 
+    // note: latest_message_has_been_sent means we never send the same message twice
+    if (!LOCKSTEP_MESSAGES && !latest_message_has_been_sent && timer_ForUart_has_passed()) {
+        timer_ForUart_reset();
         if (debugging && timer_ForPrint_has_passed()) {
             uint32_t id     = raw_incoming_can_msg.can_id;  // sizeof = 4
             uint8_t can_dlc = raw_incoming_can_msg.can_dlc; // sizeof = 1
@@ -149,38 +166,26 @@ void loop() {
             Serial.print(raw_incoming_can_msg.data[0]);
             Serial.print(" [angle2]:"); // lower order byte
             Serial.print(raw_incoming_can_msg.data[1]);
+            Serial.print(" [.angle]:"); 
+            Serial.print(uart_message_from_motor.angle);
             Serial.print(" [rpm1]:");  // higher order byte
             Serial.print(raw_incoming_can_msg.data[2]);
             Serial.print(" [rpm2]:"); // lower order byte
             Serial.print(raw_incoming_can_msg.data[3]);
+            Serial.print(" [.rpm]:"); 
+            Serial.print(uart_message_from_motor.rpm);
             Serial.print(" [current1]:"); // higher order byte
             Serial.print(raw_incoming_can_msg.data[4]);
             Serial.print(" [current2]:"); // lower order byte
             Serial.print(raw_incoming_can_msg.data[5]);
+            Serial.print(" [.current]:"); 
+            Serial.print(uart_message_from_motor.current);
             Serial.print(" [motor temp]:");
             Serial.print(raw_incoming_can_msg.data[6]);
-            Serial.print(" [null]:");
-            Serial.print(raw_incoming_can_msg.data[7]);
+            Serial.print(" [.timestamp]:");
+            Serial.print(uart_message_from_motor.timestamp);
             Serial.print("\n");
         }
-        
-        // update the latest message
-        uart_message_from_motor.id          = raw_incoming_can_msg.can_id;
-        uart_message_from_motor.can_dlc     = raw_incoming_can_msg.can_dlc;
-        uart_message_from_motor.angle       = (raw_incoming_can_msg.data[0] << 8) | raw_incoming_can_msg.data[1];
-        uart_message_from_motor.rpm         = (raw_incoming_can_msg.data[2] << 8) | raw_incoming_can_msg.data[3];
-        uart_message_from_motor.current     = (int16_t)((raw_incoming_can_msg.data[4] << 8) | raw_incoming_can_msg.data[5]);
-        uart_message_from_motor.temperature = raw_incoming_can_msg.data[6];
-        uart_message_from_motor.timestamp   = millis();
-        latest_message_has_been_sent = false;
-    }
-    
-    // 
-    // (maybe) send over uart
-    // 
-    // note: latest_message_has_been_sent means we never send the same message twice
-    if (!LOCKSTEP_MESSAGES && !latest_message_has_been_sent && timer_ForUart_has_passed()) {
-        timer_ForUart_reset();
         send_uart_message();
     }
     
