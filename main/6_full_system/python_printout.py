@@ -58,15 +58,14 @@ def parse_uart_message_or_return_none(raw_message):
         # check if null/bad message
         if message.canbus_id != 0:
             return message
-
+    
 # 
 # main
 #
 while 1:
-    port.write(bytes(MessageToEmbedded(0, 20)))
+    # port.write(bytes(MessageToEmbedded(0, 20, 1000)))
     raw_message = port.read(ctypes.sizeof(UartMessageFromMotor))
-    if len(raw_message) == ctypes.sizeof(UartMessageFromMotor):
-        message = UartMessageFromMotor.from_buffer_copy(raw_message)
+    message = parse_uart_message_or_return_none(raw_message)
+    if message:
         print(f'''message = {message}''')
-        print(f'''raw_message = {raw_message}''')
     sleep(1)
