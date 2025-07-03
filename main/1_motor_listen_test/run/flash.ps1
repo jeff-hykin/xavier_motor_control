@@ -7,6 +7,8 @@
 
 import { $$, projectFolderOrNull, userSelectPortPath, userSelectArduinoPortPath, FileSystem } from "../../helpers.js"
 
+console.log(`compiling...`)
+
 // 
 // compile
 // 
