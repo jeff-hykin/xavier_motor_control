@@ -41,7 +41,7 @@
         uint32_t magic_number = 0xDEADBEEF;
         uint8_t check_sum = 0;
         uint8_t which_motor = 0; // based on motor id
-        int8_t velocity = 0; // 128 is the max speed clockwise looking down when the motor is flat on a table
+        int8_t power = 0; // 128 is the max speed clockwise looking down when the motor is flat on a table
         uint32_t uart_send_cycle_time = 0; // miliseconds, max value: 4294967295 (49 days)
     } uart_message_to_motor, uart_message_to_motor_checker;
     byte* uart_message_buffer = (byte*)&uart_message_to_motor_checker;
@@ -55,8 +55,8 @@
         serial_line.print(uart_message.check_sum);            \
         serial_line.print(" which_motor:");                   \
         serial_line.print(uart_message.which_motor);          \
-        serial_line.print(" velocity:");                      \
-        serial_line.print(uart_message.velocity);             \
+        serial_line.print(" power:");                      \
+        serial_line.print(uart_message.power);             \
         serial_line.print(" uart_send_cycle_time:");          \
         serial_line.print(uart_message.uart_send_cycle_time); \
     }                                                         
@@ -232,7 +232,7 @@ void loop() {
             }
             timer_ForUart_duration = uart_message_to_motor.uart_send_cycle_time;
             // mutate the continually-sent message
-            raw_outgoing_canbus_message.data[uart_message_to_motor.which_motor*2] = -uart_message_to_motor.velocity;
+            raw_outgoing_canbus_message.data[uart_message_to_motor.which_motor*2] = -uart_message_to_motor.power;
         }
         
         if (LOCKSTEP_MESSAGES) {

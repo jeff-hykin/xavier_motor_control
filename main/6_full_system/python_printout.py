@@ -33,17 +33,17 @@ class MessageToEmbedded(ctypes.LittleEndianStructure):
         ("_magic_number"   , ctypes.c_uint32 ), # always set to 0xDEADBEEF
         ("_checksum"       , ctypes.c_uint8  ), # sum of all the bytes as a sanity check (implemented after experiencing data corruption)
         ("_which_motor"   , ctypes.c_uint8  ), # 0 to 3, (arduino code could be updated to handle 0 to 7, see TODO in there)
-        ("_velocity"      , ctypes.c_int8   ), # 128 is the max power in counter clockwise direction from the top, -128 is the max power clockwise
+        ("_power"      , ctypes.c_int8   ), # 128 is the max power in counter clockwise direction from the top, -128 is the max power clockwise
         ("_uart_send_rate_milliseconds", ctypes.c_uint32 ), # NOTE: if you make this too low it will NOT ONLY overwhelm the python script, but eventually overwhelm the OS message queue and make the data corrupt
                                               #       set this rate based on how fast the python can receive messages
     ]
     
-    def __init__(self, which_motor, velocity, uart_send_rate_milliseconds=int((1/60)*1000)):
+    def __init__(self, which_motor, power, uart_send_rate_milliseconds=int((1/60)*1000)):
         super().__init__()  # important to call this
         self._magic_number = 0xDEADBEEF
         self._checksum = 0
         self.which_motor = which_motor
-        self.velocity = velocity
+        self.power = power
         self.uart_send_rate_milliseconds = uart_send_rate_milliseconds
         
     def _recalculate_checksum(self):
@@ -62,11 +62,11 @@ class MessageToEmbedded(ctypes.LittleEndianStructure):
         self._recalculate_checksum()
     
     @property
-    def velocity(self): return self._velocity
-    @velocity.setter
-    def velocity(self, value):
-        assert value <= 128 and value >= -128, f"motor velocity must be between -128 and 128, it was {value}"
-        self._velocity = value
+    def power(self): return self._power
+    @power.setter
+    def power(self, value):
+        assert value <= 128 and value >= -128, f"motor power must be between -128 and 128, it was {value}"
+        self._power = value
         self._recalculate_checksum()
     
     @property
@@ -150,7 +150,7 @@ class UartMessageFromMotor(ctypes.LittleEndianStructure):
 #
 while 1:
     port.write(
-        bytes(MessageToEmbedded(which_motor=1, velocity=1, uart_send_rate_milliseconds=1000))
+        bytes(MessageToEmbedded(which_motor=1, power=6, uart_send_rate_milliseconds=1000))
     )
     # print(f'''wrote ''')
     raw_message = port.read(ctypes.sizeof(UartMessageFromMotor))
