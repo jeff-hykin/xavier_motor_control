@@ -50,6 +50,8 @@
         int8_t velocity = 0; // 128 is the max speed clockwise looking down when the motor is flat on a table
         uint32_t uart_send_cycle_time = 0; // miliseconds, max value: 4294967295 (49 days)
     } uart_message_to_motor, uart_message_to_motor_checker;
+    byte* uart_message_buffer = (byte*)&uart_message_to_motor_checker;
+    byte* confirmed_uart_message_buffer = (byte*)&uart_message_to_motor;
     
     #define print_uart_message_to_motor(serial_line, uart_message) \
     {                                                         \
@@ -92,17 +94,18 @@
         timer_ForUart_last_marker_time = millis();
     }
     
-    const uint32_t timer_ForPrint_duration = DEBUGGING_PRINT_RATE_LIMITER; // milliseconds
-    uint32_t timer_ForPrint_last_marker_time = 0;
-    bool timer_ForPrint_has_passed() {
-        uint32_t current_time = millis();
-        int64_t duration = current_time - timer_ForPrint_last_marker_time;
-        int64_t remaining_time_to_wait = duration - timer_ForPrint_duration;
-        return (remaining_time_to_wait > 0);
-    }
-    void timer_ForPrint_reset() {
-        timer_ForPrint_last_marker_time = millis();
-    }
+    // const uint32_t timer_ForPrint_duration = DEBUGGING_PRINT_RATE_LIMITER; // milliseconds
+    // uint32_t timer_ForPrint_last_marker_time = 0;
+    // bool timer_ForPrint_has_passed() {
+    //     uint32_t current_time = millis();
+    //     int64_t duration = current_time - timer_ForPrint_last_marker_time;
+    //     int64_t remaining_time_to_wait = duration - timer_ForPrint_duration;
+    //     return (remaining_time_to_wait > 0);
+    // }
+    // void timer_ForPrint_reset() {
+    //   = millis();
+    
+    // }
     
     uint32_t rate_limiter_last_call_time = 0;
     void rate_limiter(uint32_t cycle_time_milliseconds) {
@@ -137,7 +140,8 @@
         uart1.begin(UART_BAUD_RATE);
 
         // timers
-        timer_ForUart_last_marker_time = timer_ForPrint_last_marker_time = rate_limiter_last_call_time = millis();
+        timer_ForUart_last_marker_time = rate_limiter_last_call_time = millis();
+        
         
         SPI.begin();
         
@@ -155,9 +159,10 @@
 // 
 const bool debugging = true;
 void loop() {
-    auto should_print = debugging && timer_ForPrint_has_passed();
+    // auto should_print = debugging && timer_ForPrint_has_passed();
+    auto should_print = debugging;
     if (should_print) {
-        timer_ForPrint_reset();
+        // timer_ForPrint_reset();
     }
     
     // 
@@ -176,7 +181,7 @@ void loop() {
         uart_messages_from_motors[motor_id].timestamp      = millis();
         latest_message_has_been_sent = false;
         
-        if (should_print) {
+        if (should_print && true && rand()<0.08) {
             Serial.print(" [motor_id]:");
             Serial.print(motor_id);
             Serial.print(" [canbus_id]:");
@@ -235,49 +240,112 @@ void loop() {
     // 
     uint8_t lingering_bytes = 0;
     check_for_uart_message: if (uart1.available() >= lingering_bytes+sizeof(UartMessageToMotor)) {
+        // if (lingering_bytes != 0) {
+        //     Serial.print("\nByte by byte after jump:");
+        //     int i = -1;
+        //     while (++i<3) {
+        //         Serial.print(" ");
+        //         Serial.print(uart_message_buffer[i]);
+        //     }
+        //     Serial.print("\n");
+        // }
         // Serial.print("\n");
         uint8_t check_sum = 0;
         // treat existing uart_message_to_motor_checker as byte array
-        byte* uart_message_buffer = (byte*)&uart_message_to_motor_checker;
-        byte* confirmed_uart_message_buffer = (byte*)&uart_message_to_motor;
         uint16_t byte_index = lingering_bytes;
+        // if (lingering_bytes != 0) {
+        //     Serial.print("lingering_bytes at top:");
+        //     Serial.print(lingering_bytes);
+        //     Serial.print("\n");
+        // }
         while (byte_index < sizeof(uart_message_to_motor_checker)) {
             uart_message_buffer[byte_index] = uart1.read();
+            
+            Serial.print("Byte by byte after reading index ");
+            Serial.print(byte_index);
+            Serial.print(":");
+            int i = -1;
+            while (++i<3) {
+                Serial.print(" ");
+                Serial.print(uart_message_buffer[i]);
+            }
+            Serial.print("\n");
             // Serial.print("\nraw_byte:");
             // Serial.print(uart_message_buffer[byte_index]);
             // Serial.print("\n");
             // check the magic_number
             if (byte_index+1==sizeof(uart_message_to_motor_checker.magic_number)) {
+                
                 if (uart_message_to_motor.magic_number != uart_message_to_motor_checker.magic_number) {
                     communication_corruption_detected += 1;
                     if (communication_corruption_detected == 0) { // wrap around 
                         communication_corruption_detected = 1; // ensure its always at least positive
                     }
-                    // Serial.print("magic_number check failed. should_be_magic_number:");
-                    // Serial.print(uart_message_to_motor_checker.magic_number, HEX);
-                    // Serial.print(" actual magic number:");
-                    // Serial.print(uart_message_to_motor.magic_number, HEX);
                     
-                    // shift down one byte
-                    uint8_t magic_number_byte_index = 0;
-                    lingering_bytes = sizeof(uart_message_to_motor_checker.magic_number)-1;
-                    Serial.print("\nFailed magic number check: ");
-                    Serial.print(uart_message_buffer[magic_number_byte_index]);
-                    Serial.print(" (supposed to be:");
-                    Serial.print(confirmed_uart_message_buffer[0]);
-                    Serial.print(")");
-                    Serial.print(",");
-                    while (magic_number_byte_index < lingering_bytes) {
-                        Serial.print(uart_message_buffer[magic_number_byte_index+1]);
-                        Serial.print(" (supposed to be:");
-                        Serial.print(confirmed_uart_message_buffer[magic_number_byte_index+1]);
-                        Serial.print(")");
-                        Serial.print(",");
-                        uart_message_buffer[magic_number_byte_index] = uart_message_buffer[magic_number_byte_index+1];
-                        magic_number_byte_index++;
+                    // NOTE: by all accounts, the following code should work
+                    //       I think there is a hardware error or compiler bug as when this is executed
+                    //       I can print out the uart_message_to_motor_checker[0 thru 3]
+                    //       and it changes before/after the goto
+                    //       it takes several minutes to happen (both magic_number fail and corruption)
+                    //       its possible its some kind of stack corruption because commenting
+                    //       out the code seems to mostly cure both
+                    // SO the only possible workaround seems to be random offsets
+                    // any other systematic offset could (and does) continually not lock-on to the
+                    // correct offset
+                    
+                    // 
+                    // shift a random number of bytes
+                    // 
+                    uint8_t bytes_to_eat = (rand() * sizeof(uart_message_to_motor_checker.magic_number));
+                    while (bytes_to_eat-- > 0){
+                        uart1.read();
                     }
+                    lingering_bytes = 0; // not true but oh well
+                    
+                    // 
+                    // shift down one byte
+                    // 
+                        // Serial.print("magic_number check failed. should_be_magic_number:");
+                        // Serial.print(uart_message_to_motor_checker.magic_number, HEX);
+                        // Serial.print(" actual magic number:");
+                        // Serial.print(uart_message_to_motor.magic_number, HEX);
+                        
+                        // uint8_t magic_number_byte_index = 0;
+                        // lingering_bytes = sizeof(uart_message_to_motor_checker.magic_number)-1;
+                        // Serial.print("\nFailed magic number check. Given: 0x");
+                        // Serial.print(uart_message_to_motor_checker.magic_number,HEX);
+                        // Serial.print(" Expected: 0x");
+                        // Serial.print(uart_message_to_motor.magic_number,HEX);
+                        
+                        // Serial.print("\nByte by byte: ");
+                        // Serial.print(uart_message_buffer[magic_number_byte_index]);
+                        // Serial.print(" (supposed to be:");
+                        // Serial.print(confirmed_uart_message_buffer[0]);
+                        // Serial.print(")");
+                        // Serial.print(",");
+                        // while (magic_number_byte_index < lingering_bytes) {
+                        //     Serial.print(uart_message_buffer[magic_number_byte_index+1]);
+                        //     Serial.print(" (supposed to be:");
+                        //     Serial.print(confirmed_uart_message_buffer[magic_number_byte_index+1]);
+                        //     Serial.print(")");
+                        //     Serial.print(",");
+                        //     uart_message_buffer[magic_number_byte_index] = uart_message_buffer[magic_number_byte_index+1];
+                        //     magic_number_byte_index++;
+                        // }
+                        // Serial.print("\nNew byte by byte:");
+                        // int i = -1;
+                        // while (++i<4) {
+                        //     Serial.print(" ");
+                        //     Serial.print(uart_message_buffer[i]);
+                        // }
+                        // Serial.print(" (lingering_bytes=");
+                        // Serial.print(lingering_bytes);
+                        // Serial.print(")");
+                        // Serial.print("\n");
                     // try again
                     goto check_for_uart_message;
+                } else {
+                    Serial.print("PASSED magic number check\n");
                 }
             }
             // keep track of check_sum
@@ -323,9 +391,13 @@ void loop() {
             }
         } else {
             // Serial.print("passed check_sum\n");
-            timer_ForUart_duration = 500;
             // timer_ForUart_duration = uart_message_to_motor_checker.uart_send_cycle_time;
             uart_message_to_motor = uart_message_to_motor_checker;
+            if (should_print) {
+                print_uart_message_to_motor(Serial,uart_message_to_motor);
+                Serial.print("\n");
+            }
+            timer_ForUart_duration = uart_message_to_motor.uart_send_cycle_time;
             // mutate the continually-sent message
             raw_outgoing_canbus_message.data[uart_message_to_motor.which_motor*2] = -uart_message_to_motor.velocity;
         }

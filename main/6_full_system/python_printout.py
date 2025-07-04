@@ -150,7 +150,7 @@ class UartMessageFromMotor(ctypes.LittleEndianStructure):
 #
 while 1:
     port.write(
-        bytes(MessageToEmbedded(which_motor=1, velocity=0, uart_send_rate_milliseconds=1000))
+        bytes(MessageToEmbedded(which_motor=1, velocity=1, uart_send_rate_milliseconds=1000))
     )
     # print(f'''wrote ''')
     raw_message = port.read(ctypes.sizeof(UartMessageFromMotor))
