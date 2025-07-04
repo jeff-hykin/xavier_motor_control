@@ -22,7 +22,7 @@
 // parameters you can change
 // 
     // FIXME: add a required heartbeat system as a saftey net
-    const int32_t UART_BAUD_RATE = 115200; // this is really important for whoever is listening
+    const int32_t UART_BAUD_RATE = 57600; // NOTE: high baud rates like 115200 can cause TONS of data corruption
     const int32_t UART_RX_PIN = 6; // green wire in tutorial/image
     const int32_t UART_TX_PIN = 7; // purple wire in tutorial/image
     const int32_t SERIAL_BAUD_RATE = 115200; // this is only for console output / debugging, doesn't matter too much
@@ -43,22 +43,26 @@
 // 
 // helpers
 // 
-    struct UartMessageToMotor {
+    struct __attribute__((packed)) UartMessageToMotor {
+        uint32_t magic_number = 0xDEADBEEF;
+        uint8_t check_sum = 0;
         uint8_t which_motor = 0; // based on motor id
         int8_t velocity = 0; // 128 is the max speed clockwise looking down when the motor is flat on a table
-        uint32_t uart_send_rate = 0; // miliseconds, max value: 4294967295 (49 days)
-    } uart_message_to_motor;
+        uint32_t uart_send_cycle_time = 0; // miliseconds, max value: 4294967295 (49 days)
+    } uart_message_to_motor, uart_message_to_motor_checker;
 
-    struct UartMessageFromMotor {
+    uint8_t communication_corruption_detected = 0;
+    struct __attribute__((packed)) UartMessageFromMotor {
         uint32_t canbus_id;     // 
-        uint8_t motor_id;       // corrisponds to which_motor, and is based on canbus_id
         uint8_t can_dlc;        // Data Length Code
         float angle;            // Combined from data[0] and data[1], degrees (0 to 360)
         int16_t rpm;            // Combined from data[2] and data[3] // positive = clockwise/counterclockwise seems to vary from motor to motor. Unsure why
         int16_t discharge_rate;        // Combined from data[4] and data[5] // positive when energy is being consumed
         uint8_t temperature;    // From data[6] // celsius
         uint32_t timestamp;
-    } uart_message_from_motor;
+    };
+    
+    UartMessageFromMotor uart_messages_from_motors[4];
     bool latest_message_has_been_sent = false;
     
     uint32_t timer_ForUart_duration = 10; // milliseconds, NOTE: this value here is just the inital value
@@ -105,9 +109,11 @@
     struct can_frame raw_outgoing_canbus_message;
     struct can_frame raw_incoming_can_msg;
     void send_uart_message() {
+        uart1.write(communication_corruption_detected);
+        communication_corruption_detected = 0;
         // Send the struct as bytes
-        byte* ptr = (byte*)&uart_message_from_motor;
-        for (uint32_t i = 0; i < sizeof(uart_message_from_motor); i++) {
+        byte* ptr = (byte*)&uart_messages_from_motors;
+        for (uint32_t i = 0; i < sizeof(uart_messages_from_motors); i++) {
             uart1.write(ptr[i]);
         }
     }
@@ -133,22 +139,27 @@
 // 
 // main code
 // 
-bool debugging = false;
+const bool debugging = true;
 void loop() {
+    auto should_print = debugging && timer_ForPrint_has_passed();
+    if (should_print) {
+        timer_ForPrint_reset();
+    }
+    
     // 
     // receive from CANBUS
     // 
     if (mcp2515.readMessage(&raw_incoming_can_msg) == MCP2515::ERROR_OK && raw_incoming_can_msg.can_id != 0) {
+        uint8_t motor_id = raw_incoming_can_msg.can_id - 517; // IDK why this is true, but empirically its true
         // update the latest message
-        uart_message_from_motor.canbus_id      = raw_incoming_can_msg.can_id;
-        uart_message_from_motor.motor_id       = raw_incoming_can_msg.can_id - 517; // IDK why this is true, but emperically its true
-        uart_message_from_motor.can_dlc        = raw_incoming_can_msg.can_dlc;
+        uart_messages_from_motors[motor_id].canbus_id      = raw_incoming_can_msg.can_id;
+        uart_messages_from_motors[motor_id].can_dlc        = raw_incoming_can_msg.can_dlc;
         uint16_t angle                         = (raw_incoming_can_msg.data[0] << 8) | raw_incoming_can_msg.data[1]; // max angle:8191 min angle 0
-        uart_message_from_motor.angle          = (float)angle * 0.0439506775729; // convert to degrees
-        uart_message_from_motor.rpm            = (int16_t)(raw_incoming_can_msg.data[2] << 8) | raw_incoming_can_msg.data[3];
-        uart_message_from_motor.discharge_rate = (int16_t)((raw_incoming_can_msg.data[4] << 8) | raw_incoming_can_msg.data[5]);
-        uart_message_from_motor.temperature    = raw_incoming_can_msg.data[6];
-        uart_message_from_motor.timestamp      = millis();
+        uart_messages_from_motors[motor_id].angle          = (float)angle * 0.0439506775729; // convert to degrees
+        uart_messages_from_motors[motor_id].rpm            = (int16_t)(raw_incoming_can_msg.data[2] << 8) | raw_incoming_can_msg.data[3];
+        uart_messages_from_motors[motor_id].discharge_rate = (int16_t)((raw_incoming_can_msg.data[4] << 8) | raw_incoming_can_msg.data[5]);
+        uart_messages_from_motors[motor_id].temperature    = raw_incoming_can_msg.data[6];
+        uart_messages_from_motors[motor_id].timestamp      = millis();
         latest_message_has_been_sent = false;
     }
     
@@ -158,10 +169,9 @@ void loop() {
     // note: latest_message_has_been_sent means we never send the same message twice
     if (!LOCKSTEP_MESSAGES && !latest_message_has_been_sent && timer_ForUart_has_passed()) {
         timer_ForUart_reset();
-        if (debugging && timer_ForPrint_has_passed()) {
+        if (should_print) {
             uint32_t id     = raw_incoming_can_msg.can_id;  // sizeof = 4
             uint8_t can_dlc = raw_incoming_can_msg.can_dlc; // sizeof = 1
-            timer_ForPrint_reset();
             
             Serial.print(" [id]:");
             Serial.print(id);
@@ -171,24 +181,24 @@ void loop() {
             Serial.print(raw_incoming_can_msg.data[0]);
             Serial.print(" [angle2]:"); // lower order byte
             Serial.print(raw_incoming_can_msg.data[1]);
-            Serial.print(" [.angle]:"); 
-            Serial.print(uart_message_from_motor.angle);
+            // Serial.print(" [.angle]:"); 
+            // Serial.print(uart_message_from_motor.angle);
             Serial.print(" [rpm1]:");  // higher order byte
             Serial.print(raw_incoming_can_msg.data[2]);
             Serial.print(" [rpm2]:"); // lower order byte
             Serial.print(raw_incoming_can_msg.data[3]);
-            Serial.print(" [.rpm]:"); 
-            Serial.print(uart_message_from_motor.rpm);
+            // Serial.print(" [.rpm]:"); 
+            // Serial.print(uart_message_from_motor.rpm);
             Serial.print(" [discharge_rate1]:"); // higher order byte
             Serial.print(raw_incoming_can_msg.data[4]);
             Serial.print(" [discharge_rate2]:"); // lower order byte
             Serial.print(raw_incoming_can_msg.data[5]);
-            Serial.print(" [.discharge_rate]:"); 
-            Serial.print(uart_message_from_motor.discharge_rate);
+            // Serial.print(" [.discharge_rate]:"); 
+            // Serial.print(uart_message_from_motor.discharge_rate);
             Serial.print(" [motor temp]:");
             Serial.print(raw_incoming_can_msg.data[6]);
-            Serial.print(" [.timestamp]:");
-            Serial.print(uart_message_from_motor.timestamp);
+            // Serial.print(" [.timestamp]:");
+            // Serial.print(uart_message_from_motor.timestamp);
             Serial.print("\n");
         }
         send_uart_message();
@@ -197,15 +207,95 @@ void loop() {
     // 
     // read from uart if there is enough data
     // 
-    if (uart1.available() >= sizeof(UartMessageToMotor)) {
-        byte* ptr = (byte*)&uart_message_to_motor;
-        for (size_t i = 0; i < sizeof(UartMessageToMotor); i++) {
-            ptr[i] = uart1.read();
+    uint8_t lingering_bytes = 0;
+    check_for_uart_message: if (uart1.available() >= lingering_bytes+sizeof(UartMessageToMotor)) {
+        // Serial.print("\n");
+        uint8_t check_sum = 0;
+        // treat existing uart_message_to_motor_checker as byte array
+        byte* uart_message_buffer = (byte*)&uart_message_to_motor_checker;
+        byte* confirmed_uart_message_buffer = (byte*)&uart_message_to_motor;
+        uint16_t byte_index = lingering_bytes;
+        while (byte_index < sizeof(uart_message_to_motor_checker)) {
+            uart_message_buffer[byte_index] = uart1.read();
+            Serial.print("\nraw_byte:");
+            // Serial.print(uart_message_buffer[byte_index]);
+            // Serial.print("\n");
+            // check the magic_number
+            if (byte_index+1==sizeof(uart_message_to_motor_checker.magic_number)) {
+                if (uart_message_to_motor.magic_number != uart_message_to_motor_checker.magic_number) {
+                    communication_corruption_detected += 1;
+                    if (communication_corruption_detected == 0) { // wrap around 
+                        communication_corruption_detected = 1; // ensure its always at least positive
+                    }
+                    // Serial.print("magic_number check failed. should_be_magic_number:");
+                    // Serial.print(uart_message_to_motor_checker.magic_number, HEX);
+                    // Serial.print(" actual magic number:");
+                    // Serial.print(uart_message_to_motor.magic_number, HEX);
+                    
+                    // shift down one byte
+                    uint8_t magic_number_byte_index = 0;
+                    lingering_bytes = sizeof(uart_message_to_motor_checker.magic_number)-1;
+                    // Serial.print("\nbuffer contents before shift+1: ");
+                    // Serial.print(uart_message_buffer[magic_number_byte_index]);
+                    // Serial.print(" (supposed to be:");
+                    // Serial.print(confirmed_uart_message_buffer[0]);
+                    // Serial.print(")");
+                    // Serial.print(",");
+                    while (magic_number_byte_index < lingering_bytes) {
+                        Serial.print(uart_message_buffer[magic_number_byte_index+1]);
+                        Serial.print(" (supposed to be:");
+                        Serial.print(confirmed_uart_message_buffer[magic_number_byte_index+1]);
+                        Serial.print(")");
+                        Serial.print(",");
+                        uart_message_buffer[magic_number_byte_index] = uart_message_buffer[magic_number_byte_index+1];
+                        magic_number_byte_index++;
+                    }
+                    // try again
+                    goto check_for_uart_message;
+                }
+            }
+            // keep track of check_sum
+            if (byte_index >= sizeof(uart_message_to_motor_checker.magic_number)+sizeof(uart_message_to_motor.check_sum)) {
+                auto addition_amount = (int32_t)uart_message_buffer[byte_index];
+                check_sum += addition_amount;
+                // Serial.print(" check_sum [");
+                // Serial.print(byte_index);
+                // Serial.print("] ");
+                // Serial.print(addition_amount);
+            }
+            byte_index++;
         }
+        // success consumes the whole buffer (effectively)
+        lingering_bytes = 0;
+        // Serial.print("\n");
         // updating timing
-        timer_ForUart_duration = uart_message_to_motor.uart_send_rate;
-        // mutate the continually-sent message
-        raw_outgoing_canbus_message.data[uart_message_to_motor.which_motor*2] = -uart_message_to_motor.velocity;
+        // timer_ForUart_duration = uart_message_to_motor_checker.uart_send_cycle_time;
+        // Serial.print("calculated check_sum: ");
+        // Serial.print(check_sum);
+        // Serial.print(" sent check_sum: ");
+        // Serial.print(uart_message_to_motor_checker.check_sum);
+        // Serial.print(" which_motor: ");
+        // Serial.print(uart_message_to_motor_checker.which_motor);
+        // Serial.print(" velocity: ");
+        // Serial.print(uart_message_to_motor_checker.velocity);
+        // Serial.print(" uart_send_cycle_time: ");
+        // Serial.print(uart_message_to_motor_checker.uart_send_cycle_time);
+        // Serial.print("\n");
+        if (check_sum != uart_message_to_motor_checker.check_sum) {
+            Serial.print("failed check_sum");
+            communication_corruption_detected += 16;
+            if (communication_corruption_detected == 0) { // wrap around 
+                communication_corruption_detected = 16; // ensure its always at least positive
+            }
+        } else {
+            Serial.print("passed check_sum");
+            timer_ForUart_duration = 500;
+            // timer_ForUart_duration = uart_message_to_motor_checker.uart_send_cycle_time;
+            uart_message_to_motor = uart_message_to_motor_checker;
+            // mutate the continually-sent message
+            raw_outgoing_canbus_message.data[uart_message_to_motor.which_motor*2] = -uart_message_to_motor.velocity;
+        }
+        // Serial.print("\n");
         
         if (LOCKSTEP_MESSAGES) {
             send_uart_message();
