@@ -159,4 +159,4 @@ while 1:
     if message:
         # print(raw_message)
         print(message)
-    sleep(0.5)
+    sleep(0.20)

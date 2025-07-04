@@ -15,10 +15,10 @@
 // 
 // parameters you can change
 // 
-    // FIXME: add a required heartbeat system as a saftey net
     const int32_t UART_BAUD_RATE = 57600; // NOTE: high baud rates like 115200 can cause TONS of data corruption
     const int32_t UART_RX_PIN = 6; // green wire in tutorial/image
     const int32_t UART_TX_PIN = 7; // purple wire in tutorial/image
+    const uint32_t HEARTBEAT_MAX_GAP = 2000; // milliseconds, no message from source after this time gap will set all the motors to 0
     const int32_t SERIAL_BAUD_RATE = 115200; // this is only for console output / DEBUGGING, doesn't matter too much
     const int32_t PIN_FOR_MCP2515 = 10; // blue wire in tutorial, only change this if you need to change the wiring of the arduino for some reason
     const int32_t MAX_CYCLE_TIME = 50; // NOTE(!!!): this needs to stay low, otherwise the motor does not respond (I'm unsure why), units = milliseconds
@@ -37,6 +37,9 @@
 // 
 // helpers
 // 
+    uint32_t last_time_message_received_milliseconds = 0;
+    bool heatbeat_was_already_lost = false;
+    
     struct __attribute__((packed)) UartMessageToMotor {
         uint32_t magic_number = 0xDEADBEEF;
         uint8_t check_sum = 0;
@@ -138,6 +141,7 @@
 // main code
 // 
 void loop() {
+    auto loop_start_time = millis();
     // 
     // receive from CANBUS
     // 
@@ -151,7 +155,7 @@ void loop() {
         uart_messages_from_motors[motor_id].rpm            = (int16_t)(raw_incoming_can_msg.data[2] << 8) | raw_incoming_can_msg.data[3];
         uart_messages_from_motors[motor_id].discharge_rate = (int16_t)((raw_incoming_can_msg.data[4] << 8) | raw_incoming_can_msg.data[5]);
         uart_messages_from_motors[motor_id].temperature    = raw_incoming_can_msg.data[6];
-        uart_messages_from_motors[motor_id].timestamp      = millis();
+        uart_messages_from_motors[motor_id].timestamp      = loop_start_time;
         latest_message_has_been_sent = false;
         
         if (DEBUGGING && rand()<0.08) {
@@ -199,6 +203,10 @@ void loop() {
                         communication_corruption_detected = 1; // ensure its always at least positive
                     }
                     
+                    if (DEBUGGING) {
+                        Serial.print("communication corruption detected, magic_number incorrect\n");
+                    }
+                    
                     // 
                     // shift a random number of bytes
                     // 
@@ -224,7 +232,11 @@ void loop() {
             if (communication_corruption_detected == 0) { // wrap around 
                 communication_corruption_detected = 16; // ensure its always at least positive
             }
+            if (DEBUGGING) {
+                Serial.print("communication corruption detected, check_sum incorrect\n");
+            }
         } else {
+            last_time_message_received_milliseconds = loop_start_time;
             uart_message_to_motor = uart_message_to_motor_checker;
             if (DEBUGGING) {
                 print_uart_message_to_motor(Serial,uart_message_to_motor);
@@ -241,9 +253,28 @@ void loop() {
     }
     
     // 
+    // heartbeat
+    // 
+    const bool heatbeat_lost = loop_start_time - last_time_message_received_milliseconds > HEARTBEAT_MAX_GAP;
+    if (heatbeat_lost) {
+        if (DEBUGGING && !heatbeat_was_already_lost) {
+            Serial.print("heartbeat lost, halting\n");
+        }
+        // set power of all motors to 0
+        raw_outgoing_canbus_message.data[0*2] = 0;
+        raw_outgoing_canbus_message.data[1*2] = 0;
+        raw_outgoing_canbus_message.data[2*2] = 0;
+        raw_outgoing_canbus_message.data[3*2] = 0;
+        heatbeat_was_already_lost = true;
+    } else {
+        heatbeat_was_already_lost = false;
+    }
+    
+    // 
     // tell motors to move
     // 
     mcp2515.sendMessage(&raw_outgoing_canbus_message);
     
-    rate_limiter(timer_ForUart_duration < MAX_CYCLE_TIME ? timer_ForUart_duration : MAX_CYCLE_TIME); // this makes sure each loop iteration takes at least MAX_CYCLE_TIME milliseconds
+    rate_limiter(timer_ForUart_duration < MAX_CYCLE_TIME ? timer_ForUart_duration : MAX_CYCLE_TIME);
+    // makes sure each loop iteration takes at least MAX_CYCLE_TIME milliseconds
 }
