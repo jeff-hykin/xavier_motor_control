@@ -1,5 +1,21 @@
-# # uncomment to add /usr/bin to your PATH inside of the virkshop
-# export PATH="/usr/bin:$PATH"
+setopt INTERACTIVE_COMMENTS
 
-# # uncomment for a small command line shortcut
-# alias ll="ls -l"
+HISTFILE="$HOME/.zsh_history"
+
+# Number of lines kept in the history file
+HISTSIZE=10000
+
+# Number of lines kept in memory during a session
+SAVEHIST=10000
+
+# enable auto complete
+# autoload -Uz compinit
+# compinit
+
+# autoload bashcompinit
+# bashcompinit
+
+unalias -m '*' # remove all default aliases
+
+
+alias ll="ls -l"
