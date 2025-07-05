@@ -5,7 +5,7 @@ if (!Deno.stdin.isTerminal) {
     Deno.stdin.isTerminal = ()=>true
 }
 // really slow import
-// import { getPorts, open } from "https://esm.sh/gh/jeff-hykin/deno_serial@0.0.2.0/mod.ts";
+// import { getPorts, open } from "https://esm.sh/gh/jeff-hykin/deno_serial@0.0.3.0/mod.ts";
 
 // deno_bundle --minify '/home/xavier/repos/xavier_motor_control/main/helpers.unbundled.js' > '/home/xavier/repos/xavier_motor_control/main/helpers.js'
 
@@ -15,14 +15,14 @@ export { Select, FileSystem }
 
 let denoSerial
 export async function openPort(...args) {
-    denoSerial = await (denoSerial||import("https://esm.sh/gh/jeff-hykin/deno_serial@0.0.2.0/mod.ts"))
+    denoSerial = await (denoSerial||import("https://esm.sh/gh/jeff-hykin/deno_serial@0.0.3.0/mod.ts"))
     return denoSerial.open(...args)
 }
 // 
 // helper 
 // 
 export async function userSelectPortPath() {
-    // denoSerial = await (denoSerial||import("https://esm.sh/gh/jeff-hykin/deno_serial@0.0.2.0/mod.ts"))
+    // denoSerial = await (denoSerial||import("https://esm.sh/gh/jeff-hykin/deno_serial@0.0.3.0/mod.ts"))
     const ports = await denoSerial.getPorts()
     let possibleArduinoPorts = ports||[]
     let whichPort = null
@@ -43,7 +43,7 @@ export async function userSelectPortPath() {
 }
 
 export async function userSelectArduinoPortPath() {
-    denoSerial = await (denoSerial||import("https://esm.sh/gh/jeff-hykin/deno_serial@0.0.2.0/mod.ts"))
+    denoSerial = await (denoSerial||import("https://esm.sh/gh/jeff-hykin/deno_serial@0.0.3.0/mod.ts"))
     const ports = await denoSerial.getPorts()
     let possibleArduinoPorts = ports||[]
     if (ports) {
