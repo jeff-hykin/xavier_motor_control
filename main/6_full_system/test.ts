@@ -153,21 +153,38 @@ async function main() {
 
     let lastSent = performance.now() - 1e6
 
-    while (true) {
-        const now = performance.now()
-        if (now - lastSent > 200) {
-            console.log("now - lastSent", now - lastSent)
-            const msg = buildMessageToEmbedded(1, 7, 1000)
-            console.log(`msg is:`, msg)
-            await port.write(msg)
-            lastSent = now
+    //
+    // record responses
+    //
+    ;((async ()=>{
+        while (true) {
+            await readAndParseMotorMessage(port)
+            await new Promise(r=>setTimeout(r,1))
         }
+    })())
 
-        await readAndParseMotorMessage(port)
+    //
+    // send movements
+    //
+    ;((async ()=>{
+        // const now = performance.now()
+        // if (now - lastSent > 200) {
+        //     console.log("now - lastSent", now - lastSent)
+        //     console.log(`msg is:`, msg)
+        //     lastSent = now
+        // }
+        while (true) {
+            await port.write(buildMessageToEmbedded(1, 7, 1000))
+            await new Promise((res) => setTimeout(res, 1000))
+            await port.write(buildMessageToEmbedded(1, 0, 1000))
+            await new Promise((res) => setTimeout(res, 1000))
+            await port.write(buildMessageToEmbedded(1, -7, 1000))
+            await new Promise((res) => setTimeout(res, 1000))
+            await port.write(buildMessageToEmbedded(1, 0, 1000))
+            await new Promise((res) => setTimeout(res, 1000))
+        }
+    })())
 
-        // delay ~200 ms
-        await new Promise((res) => setTimeout(res, 200))
-    }
 }
 
 main().catch(console.error)
