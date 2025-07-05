@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run --allow-all
 import { getPorts, open, Serial } from "https://esm.sh/gh/jeff-hykin/deno_serial@e5a73c3/mod.ts"
-import { sum } from 'https://esm.sh/gh/jeff-hykin/good-js@1.17.2.0/source/flattened/sum.js' 
+import { sum } from "https://esm.sh/gh/jeff-hykin/good-js@1.17.2.0/source/flattened/sum.js"
 
 // -- config --
 const PORT = "/dev/ttyTHS0"
@@ -18,13 +18,13 @@ const MESSAGE_TO_EMBEDDED_SIZES = {
 }
 
 const MESSAGE_FROM_EMBEDDED_SIZES = {
-    canbus_id: 4, //uint32_t 
-    can_dlc: 1, //uint8_t 
-    angle: 4, //float 
-    rpm: 2, //int16_t 
-    discharge_rate: 2, //int16_t 
-    temperature: 1, //uint8_t 
-    timestamp: 4, //uint32_t 
+    canbus_id: 4, //uint32_t
+    can_dlc: 1, //uint8_t
+    angle: 4, //float
+    rpm: 2, //int16_t
+    discharge_rate: 2, //int16_t
+    temperature: 1, //uint8_t
+    timestamp: 4, //uint32_t
 }
 const MESSAGE_FROM_EMBEDDED_TOTAL_SIZE = sum(Object.values(MESSAGE_FROM_EMBEDDED_SIZES))
 const MOTOR_COUNT = 4
@@ -156,9 +156,9 @@ async function main() {
     while (true) {
         const now = performance.now()
         if (now - lastSent > 200) {
-            console.log("now - lastSent",now - lastSent)
+            console.log("now - lastSent", now - lastSent)
             const msg = buildMessageToEmbedded(1, 7, 1000)
-            console.log(`msg is:`,msg)
+            console.log(`msg is:`, msg)
             await port.write(msg)
             lastSent = now
         }
