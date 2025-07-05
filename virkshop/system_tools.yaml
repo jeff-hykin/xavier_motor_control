@@ -16,8 +16,8 @@
 # Examples of extra warehouses:
 
 # - (warehouse):
-#     saveVariableAs: "warehouseWithTorch_1_8_1"
-#     createWarehouseFrom: { tarFileUrl: "https://github.com/NixOS/nixpkgs/archive/141439f6f11537ee349a58aaf97a5a5fc072365c.tar.gz" }
+#     saveVariableAs: "warehouseWithDeno2"
+#     createWarehouseFrom: { tarFileUrl: "https://github.com/NixOS/nixpkgs/archive/61c0f513911459945e2cb8bf333dc849f1b976ff.tar.gz" }
 #     arguments:
 #         config: {}
     
@@ -113,7 +113,7 @@
 # 
 - (integrate):
     package: [ "deno",]
-    from: "472fc059560306eeea6834d5923930f1c3968724" # a commit-hash of https://github.com/NixOS/nixpkgs, e.g. https://github.com/NixOS/nixpkgs/archive/472fc059560306eeea6834d5923930f1c3968724.tar.gz
+    from: "61c0f513911459945e2cb8bf333dc849f1b976ff" # a commit-hash of https://github.com/NixOS/nixpkgs, e.g. https://github.com/NixOS/nixpkgs/archive/61c0f513911459945e2cb8bf333dc849f1b976ff.tar.gz
     asBuildInput: true
     keep:
       - "bin/deno"
