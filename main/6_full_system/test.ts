@@ -1,5 +1,6 @@
 #!/usr/bin/env -S deno run --allow-all
 import { getPorts, open, Serial } from "https://esm.sh/gh/jeff-hykin/deno_serial@e5a73c3/mod.ts"
+import { sum } from 'https://esm.sh/gh/jeff-hykin/good-js@1.17.2.0/source/flattened/sum.js' 
 
 // -- config --
 const PORT = "/dev/ttyTHS0"
@@ -8,13 +9,25 @@ const SERIAL_TIMEOUT_MS = 0.1
 const MAGIC_NUMBER = 0xdeadbeef
 
 // Size of fields in bytes
-const STRUCT_SIZES = {
+const MESSAGE_TO_EMBEDDED_SIZES = {
     magic: 4,
     checksum: 1,
     which_motor: 1,
     power: 1,
     uart_rate: 4,
 }
+
+const MESSAGE_FROM_EMBEDDED_SIZES = {
+    canbus_id: 4, //uint32_t 
+    can_dlc: 1, //uint8_t 
+    angle: 4, //float 
+    rpm: 2, //int16_t 
+    discharge_rate: 2, //int16_t 
+    temperature: 1, //uint8_t 
+    timestamp: 4, //uint32_t 
+}
+const MESSAGE_FROM_EMBEDDED_TOTAL_SIZE = sum(Object.values(MESSAGE_FROM_EMBEDDED_SIZES))
+const MOTOR_COUNT = 4
 
 // Helper: pack uint32 LE
 function uint32ToLE(buf: Uint8Array, offset: number, v: number) {
@@ -31,59 +44,58 @@ function int8To(buf: Uint8Array, offset: number, v: number) {
 
 // Build MessageToEmbedded buffer
 function buildMessageToEmbedded(which_motor: number, power: number, uart_send_rate_ms = Math.floor((1 / 60) * 1000)): Uint8Array {
-    const size = STRUCT_SIZES.magic + STRUCT_SIZES.checksum + STRUCT_SIZES.which_motor + STRUCT_SIZES.power + STRUCT_SIZES.uart_rate
+    const size = MESSAGE_TO_EMBEDDED_SIZES.magic + MESSAGE_TO_EMBEDDED_SIZES.checksum + MESSAGE_TO_EMBEDDED_SIZES.which_motor + MESSAGE_TO_EMBEDDED_SIZES.power + MESSAGE_TO_EMBEDDED_SIZES.uart_rate
     const buf = new Uint8Array(size)
     let ptr = 0
 
     // magic number
     uint32ToLE(buf, ptr, MAGIC_NUMBER)
-    ptr += STRUCT_SIZES.magic
+    ptr += MESSAGE_TO_EMBEDDED_SIZES.magic
 
     // placeholder checksum
     buf[ptr] = 0
-    ptr += STRUCT_SIZES.checksum
+    ptr += MESSAGE_TO_EMBEDDED_SIZES.checksum
 
     // which_motor
     if (which_motor < 0 || which_motor > 3) {
         throw new Error("which_motor must be 0–3")
     }
     int8To(buf, ptr, which_motor)
-    ptr += STRUCT_SIZES.which_motor
+    ptr += MESSAGE_TO_EMBEDDED_SIZES.which_motor
 
     // power
     if (power < -128 || power > 128) {
         throw new Error("power must be –128 to 128")
     }
     int8To(buf, ptr, power)
-    ptr += STRUCT_SIZES.power
+    ptr += MESSAGE_TO_EMBEDDED_SIZES.power
 
     // uart_send_rate_ms
     if (uart_send_rate_ms < 0) {
         throw new Error("uart_send_rate_ms must be >=0")
     }
     uint32ToLE(buf, ptr, uart_send_rate_ms)
-    // ptr += STRUCT_SIZES.uart_rate;
+    // ptr += MESSAGE_TO_EMBEDDED_SIZES.uart_rate;
 
     // compute checksum: sum all bytes after magic+checksum
-    const sumStart = STRUCT_SIZES.magic + STRUCT_SIZES.checksum
+    const sumStart = MESSAGE_TO_EMBEDDED_SIZES.magic + MESSAGE_TO_EMBEDDED_SIZES.checksum
     let cs = 0
     for (let i = sumStart; i < buf.length; i++) {
         cs = (cs + buf[i]) & 0xff
     }
-    buf[STRUCT_SIZES.magic] = cs // put checksum
+    buf[MESSAGE_TO_EMBEDDED_SIZES.magic] = cs // put checksum
 
     return buf
 }
 
 // Parser for UartMessageFromMotor
 async function readAndParseMotorMessage(port: Serial): Promise<void> {
-    // total struct size:
-    const motorCount = 4
     // fields: corruption(1) + for each motor: u32 + u8 + float + i16 + i16 + u8 + u32
-    const per = 1 + 4 + 1 + 4 + 2 + 2 + 1 + 4 // =19
-    const totalSize = per * motorCount + 1 // extra initial byte
+    const totalSize = MESSAGE_FROM_EMBEDDED_TOTAL_SIZE * MOTOR_COUNT + 1 // extra initial byte
     const raw = await port.read(totalSize)
-    if (!raw || raw.length !== totalSize) return
+    if (!raw || raw.length !== totalSize) {
+        return
+    }
 
     const dv = new DataView(raw.buffer)
     const corruption = dv.getUint8(0)
@@ -94,7 +106,7 @@ async function readAndParseMotorMessage(port: Serial): Promise<void> {
     const out = []
     let offset = 1
     const BASE_CAN = 517
-    for (let mi = 0; mi < motorCount; mi++) {
+    for (let mi = 0; mi < MOTOR_COUNT; mi++) {
         const can_id = dv.getUint32(offset, true)
         offset += 4
         const can_dlc = dv.getUint8(offset)
