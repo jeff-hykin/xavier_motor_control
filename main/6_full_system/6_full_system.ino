@@ -18,7 +18,7 @@
     const int32_t UART_BAUD_RATE = 57600; // NOTE: high baud rates like 115200 can cause TONS of data corruption
     const int32_t UART_RX_PIN = 6; // green wire in tutorial/image
     const int32_t UART_TX_PIN = 7; // purple wire in tutorial/image
-    const uint32_t HEARTBEAT_MAX_GAP = 2000; // milliseconds, no message from source after this time gap will set all the motors to 0
+    const uint32_t HEARTBEAT_MAX_GAP = 500; // milliseconds, no message from source after this time gap will set all the motors to 0
     const int32_t SERIAL_BAUD_RATE = 115200; // this is only for console output / DEBUGGING, doesn't matter too much
     const int32_t PIN_FOR_MCP2515 = 10; // blue wire in tutorial, only change this if you need to change the wiring of the arduino for some reason
     const int32_t MAX_CYCLE_TIME = 50; // NOTE(!!!): this needs to stay low, otherwise the motor does not respond (I'm unsure why), units = milliseconds
